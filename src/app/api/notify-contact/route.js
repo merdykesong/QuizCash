@@ -1,14 +1,29 @@
-export async function POST(request) {
-  const secret = request.headers.get("x-webhook-secret");
+import { createClient } from "@supabase/supabase-js";
 
-  if (secret !== process.env.CONTACT_WEBHOOK_SECRET) {
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
+
+export async function POST(request) {
+  const authHeader = request.headers.get("authorization") || "";
+  const token = authHeader.replace("Bearer ", "");
+
+  if (!token) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const payload = await request.json();
-  const record = payload.record;
+  const { data: userData, error: userError } = await supabase.auth.getUser(
+    token
+  );
 
-  if (!record) {
+  if (userError || !userData.user) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  const { pseudo, email, sujet, message } = await request.json();
+
+  if (!pseudo || !email || !sujet || !message) {
     return new Response("Bad request", { status: 400 });
   }
 
@@ -22,12 +37,12 @@ export async function POST(request) {
       body: JSON.stringify({
         from: "QuizCash <onboarding@resend.dev>",
         to: "merdykesong00@gmail.com",
-        subject: `Nouveau message : ${record.sujet}`,
+        subject: `Nouveau message : ${sujet}`,
         html: `
-          <p><strong>De :</strong> ${record.pseudo} (${record.email})</p>
-          <p><strong>Sujet :</strong> ${record.sujet}</p>
+          <p><strong>De :</strong> ${pseudo} (${email})</p>
+          <p><strong>Sujet :</strong> ${sujet}</p>
           <p><strong>Message :</strong></p>
-          <p>${record.message}</p>
+          <p>${message}</p>
         `,
       }),
     });

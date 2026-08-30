@@ -59,6 +59,18 @@ export default function ContactPage() {
       return;
     }
 
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+
+    fetch("/api/notify-contact", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ pseudo, email, sujet, message }),
+    }).catch((err) => console.error("Notification error:", err));
+
     setSent(true);
   }
 
