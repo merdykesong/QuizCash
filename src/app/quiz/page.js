@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
-const TIME_PER_QUESTION = 15;
+const TIME_PER_QUESTION = 10;
+const DAILY_LIMIT = 7;
 
 const CATEGORY_ICONS = {
   "Mathématiques": "🔢",
@@ -37,15 +38,41 @@ export default function QuizPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [blockedMessage, setBlockedMessage] = useState("");
   const [finished, setFinished] = useState(false);
   const [timeLeft, setTimeLeft] = useState(TIME_PER_QUESTION);
   const [result, setResult] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const answeredRef = useRef(false);
   const submittedRef = useRef(false);
 
+  // Vérifie la limite quotidienne AVANT de charger les questions
   useEffect(() => {
-    async function loadQuestions() {
+    async function init() {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        router.push("/login");
+        return;
+      }
+
+      const startOfDay = new Date();
+      startOfDay.setUTCHours(0, 0, 0, 0);
+
+      const { count } = await supabase
+        .from("parties")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userData.user.id)
+        .gte("created_at", startOfDay.toISOString());
+
+      if (count !== null && count >= DAILY_LIMIT) {
+        setBlockedMessage(
+          `Limite quotidienne de ${DAILY_LIMIT} parties atteinte. Reviens demain !`
+        );
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.from("questions").select("*");
 
       if (error || !data || data.length === 0) {
@@ -59,8 +86,8 @@ export default function QuizPage() {
       setLoading(false);
     }
 
-    loadQuestions();
-  }, []);
+    init();
+  }, [router]);
 
   const goToNext = useCallback(() => {
     setCurrentIndex((i) => {
@@ -117,6 +144,7 @@ export default function QuizPage() {
 
       if (error) {
         console.error(error);
+        setSubmitError(error.message || "Une erreur est survenue.");
         setSubmitting(false);
         return;
       }
@@ -131,7 +159,21 @@ export default function QuizPage() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
-        <p>Chargement des questions...</p>
+        <p>Chargement...</p>
+      </main>
+    );
+  }
+
+  if (blockedMessage) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-950 px-4 text-white">
+        <p className="max-w-sm text-center text-red-400">{blockedMessage}</p>
+        <button
+          onClick={() => router.push("/dashboard")}
+          className="rounded-lg bg-indigo-500 px-5 py-2 font-medium hover:bg-indigo-400"
+        >
+          Retour au dashboard
+        </button>
       </main>
     );
   }
@@ -151,6 +193,20 @@ export default function QuizPage() {
   }
 
   if (finished) {
+    if (submitError) {
+      return (
+        <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-950 px-4 text-white">
+          <p className="max-w-sm text-center text-red-400">{submitError}</p>
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="rounded-lg bg-indigo-500 px-5 py-2 font-medium hover:bg-indigo-400"
+          >
+            Retour au dashboard
+          </button>
+        </main>
+      );
+    }
+
     if (submitting || !result) {
       return (
         <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
