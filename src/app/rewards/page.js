@@ -53,6 +53,12 @@ export default function RewardsPage() {
         <div className="mb-8 flex items-center justify-between">
           <h1 className="text-3xl font-bold">💰 Mes récompenses</h1>
           <Link
+  href="/withdraw"
+  className="rounded-lg bg-yellow-500 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-yellow-400"
+>
+  💳 Retrait
+</Link>
+          <Link
             href="/dashboard"
             className="rounded-lg border border-white/20 px-4 py-2 text-sm hover:bg-white/10"
           >

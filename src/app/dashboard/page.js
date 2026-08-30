@@ -72,6 +72,7 @@ export default function DashboardPage() {
           <MenuButton href="/profile" label="👤 Mon profil" />
           <MenuButton href="/settings" label="⚙️ Paramètres" />
           <MenuButton href="/help" label="🆘 Aide & Contact" />
+          <MenuButton href="/withdraw" label="💳 Retrait" />
         </div>
 
         <button
