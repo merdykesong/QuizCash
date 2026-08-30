@@ -1,10 +1,11 @@
+import { Hero3D } from "@/components/Hero3D";
 import Link from "next/link";
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 text-white">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-6 md:px-12">
+      <header className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-6 md:px-12">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🧠</span>
           <span className="text-xl font-bold tracking-tight">
@@ -29,6 +30,7 @@ export default function Home() {
 
       {/* Hero */}
       <section className="mx-auto flex max-w-3xl flex-col items-center px-6 pb-16 pt-10 text-center md:pb-24 md:pt-16">
+        <Hero3D />
         <h1 className="text-4xl font-extrabold leading-tight tracking-tight md:text-6xl">
           Réponds à des quiz.
           <br />
