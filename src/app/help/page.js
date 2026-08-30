@@ -6,7 +6,7 @@ import Link from "next/link";
 const FAQ = [
   {
     icon: "🎮",
-    title: "Comment jouer ?",
+    title: "Comment jouer et gagner?",
     answer:
       "Depuis ton dashboard, clique sur \"Jouer maintenant\". Chaque partie contient 30 questions à choix multiples réparties sur plusieurs catégories. Choisis une réponse pour passer à la question suivante.",
   },
@@ -14,7 +14,7 @@ const FAQ = [
     icon: "⏱️",
     title: "Comment fonctionne le chronomètre ?",
     answer:
-      "Tu as 15 secondes pour répondre à chaque question. Si le temps arrive à 0, la question est automatiquement comptée comme sans réponse et tu passes à la suivante.",
+      "Tu as 10 secondes pour répondre à chaque question. Si le temps arrive à 0, la question est automatiquement comptée comme sans réponse et tu passes à la suivante.",
   },
   {
     icon: "🏆",
@@ -26,13 +26,13 @@ const FAQ = [
     icon: "💰",
     title: "Comment fonctionnent les récompenses ?",
     answer:
-      "À chaque partie, tu gagnes une récompense virtuelle calculée ainsi : score ÷ 30. Par exemple, 20/30 donne 0,67 $. Cette récompense s'ajoute à ton solde virtuel visible sur ton dashboard.",
+      "À chaque partie, tu gagnes une récompense réelle calculée ainsi : score ÷ 30. Par exemple, 20/30 donne 0,67 $. Cette récompense s'ajoute à ton solde virtuel visible sur ton dashboard.",
   },
   {
     icon: "💳",
     title: "Comment fonctionne le retrait ?",
     answer:
-      "Une fois que ton solde virtuel atteint 10,00 $, tu peux faire une demande de retrait depuis la page Récompenses. Pour cette version, les retraits sont en mode simulation : aucun transfert réel n'est encore effectué.",
+      "Une fois que ton solde  atteint 10,00 $, tu peux faire une demande de retrait depuis la page Récompenses. Pour cette version, les retraits sont faites directement  : vous aurez un transfert réel de votre argent rétiré.",
   },
   {
     icon: "🔐",
