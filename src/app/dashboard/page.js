@@ -73,6 +73,9 @@ export default function DashboardPage() {
           <MenuButton href="/settings" label="⚙️ Paramètres" />
           <MenuButton href="/help" label="🆘 Aide & Contact" />
           <MenuButton href="/withdraw" label="💳 Retrait" />
+        {profile?.is_admin && (
+          <MenuButton href="/admin" label="🛠️ Admin" />
+        )}
         </div>
 
         <button

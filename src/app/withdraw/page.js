@@ -108,6 +108,22 @@ export default function WithdrawPage() {
       return;
     }
 
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+
+    fetch("/api/notify-withdrawal", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        pseudo: fields.nom_titulaire || fields.email_paypal || "Utilisateur",
+        montant: data[0].montant,
+        methode: selectedMethod,
+      }),
+    }).catch((err) => console.error("Notification error:", err));
+
     await loadData();
     setStep("methods");
     setSelectedMethod(null);
