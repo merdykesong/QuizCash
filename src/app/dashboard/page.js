@@ -71,6 +71,7 @@ export default function DashboardPage() {
           <MenuButton href="/leaderboard" label="🏆 Classement" />
           <MenuButton href="/profile" label="👤 Mon profil" />
           <MenuButton href="/settings" label="⚙️ Paramètres" />
+          <MenuButton href="/help" label="🆘 Aide & Contact" />
         </div>
 
         <button
