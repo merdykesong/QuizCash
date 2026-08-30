@@ -35,6 +35,7 @@ export default function AdminPage() {
   const [filter, setFilter] = useState("toutes");
   const [expandedId, setExpandedId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [emailMap, setEmailMap] = useState({});
 
   useEffect(() => {
     loadData();
@@ -79,6 +80,30 @@ export default function AdminPage() {
     setPseudoMap(map);
     setRequests(requestsData || []);
     setProfiles(profilesData || []);
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+
+    try {
+      const res = await fetch("/api/admin/list-users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const eMap = {};
+        json.emails.forEach((u) => {
+          eMap[u.id] = u.email;
+        });
+        setEmailMap(eMap);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+
     setLoading(false);
   }
 
@@ -282,6 +307,7 @@ export default function AdminPage() {
                         <span className="ml-2 text-xs text-yellow-400">admin</span>
                       )}
                     </p>
+                    <p className="text-xs text-slate-500">{emailMap[p.id]}</p>
                     <p className="text-xs text-slate-400">
                       Inscrit le{" "}
                       {new Date(p.created_at).toLocaleDateString("fr-FR")} •{" "}
