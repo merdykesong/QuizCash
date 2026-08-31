@@ -44,7 +44,12 @@ export default function SignupPage() {
 
     router.push("/dashboard");
   }
-
+async function handleGoogleLogin() {
+  await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${window.location.origin}/dashboard` },
+  });
+}
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 px-4 text-white">
       <form
@@ -116,7 +121,19 @@ export default function SignupPage() {
         >
           {loading ? "Création..." : "Créer mon compte"}
         </button>
+        <div className="my-5 flex items-center gap-3">
+  <div className="h-px flex-1 bg-white/10" />
+  <span className="text-xs text-slate-500">ou</span>
+  <div className="h-px flex-1 bg-white/10" />
+</div>
 
+<button
+  type="button"
+  onClick={handleGoogleLogin}
+  className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-3 font-medium transition hover:bg-white/10"
+>
+  🔵 Continuer avec Google
+</button>
         <p className="mt-4 text-center text-sm text-slate-400">
           Déjà un compte ?{" "}
           <Link href="/login" className="text-indigo-400 hover:underline">
