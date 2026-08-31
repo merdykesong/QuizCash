@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
 const TIME_PER_QUESTION = 10;
-const DAILY_LIMIT = 7;
+const DAILY_LIMIT = 5;
 
 const CATEGORY_ICONS = {
   "Mathématiques": "🔢",
@@ -17,6 +17,7 @@ const CATEGORY_ICONS = {
   "Culture générale": "🧠",
   "Musique": "🎵",
   "Littérature": "📚",
+  "Casse-tête": "🧩",
 };
 
 function getCategoryIcon(category) {
@@ -48,7 +49,7 @@ export default function QuizPage() {
   const answeredRef = useRef(false);
   const submittedRef = useRef(false);
 
-  // Vérifie la limite quotidienne AVANT de charger les questions
+  // Vérifie la limite quotidienne, puis charge des questions via la fonction anti-répétition
   useEffect(() => {
     async function init() {
       const { data: userData } = await supabase.auth.getUser();
@@ -74,29 +75,7 @@ export default function QuizPage() {
         return;
       }
 
-      const threeDaysAgo = new Date();
-      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-
-      const { data: seenRows } = await supabase
-        .from("questions_vues")
-        .select("question_id")
-        .eq("user_id", userData.user.id)
-        .gte("vu_a", threeDaysAgo.toISOString());
-
-      const seenIds = (seenRows || []).map((r) => r.question_id);
-
-      let query = supabase.from("questions").select("*");
-      if (seenIds.length > 0) {
-        query = query.not("id", "in", `(${seenIds.join(",")})`);
-      }
-
-      let { data, error } = await query;
-
-      if (!error && (!data || data.length < 30)) {
-        const fallback = await supabase.from("questions").select("*");
-        data = fallback.data;
-        error = fallback.error;
-      }
+      const { data, error } = await supabase.rpc("obtenir_questions_quiz");
 
       if (error || !data || data.length === 0) {
         console.error(error);
@@ -104,14 +83,7 @@ export default function QuizPage() {
         return;
       }
 
-      const shuffled = shuffle(data).slice(0, 30);
-
-      const seenInsert = shuffled.map((q) => ({
-        user_id: userData.user.id,
-        question_id: q.id,
-      }));
-      supabase.from("questions_vues").insert(seenInsert);
-
+      const shuffled = shuffle(data);
       setQuestions(shuffled);
       setLoading(false);
     }
