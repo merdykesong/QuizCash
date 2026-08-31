@@ -71,7 +71,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
+      <main className="flex min-h-screen items-center justify-center bg-black text-neutral-100">
         <p>Chargement...</p>
       </main>
     );
@@ -89,7 +89,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-950 text-white lg:flex-row">
+    <div className="flex min-h-screen flex-col bg-black text-neutral-100 lg:flex-row">
       <Sidebar isAdmin={profile?.is_admin} />
 
       <div className="flex flex-1 flex-col gap-6 p-4 lg:flex-row lg:gap-6 lg:p-8">
@@ -99,29 +99,29 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold md:text-3xl">
               Bienvenue, {profile?.pseudo} 👋
             </h1>
-            <p className="text-slate-400">Voici ton tableau de bord.</p>
+            <p className="text-neutral-400">Voici ton tableau de bord.</p>
           </div>
 
           {/* Stats */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="rounded-2xl border border-yellow-400/30 bg-yellow-400/10 p-5 text-center backdrop-blur-xl">
-              <p className="text-xs uppercase tracking-wide text-yellow-300/70">
+            <div className="rounded-xl border border-[#e8c75a]/40 bg-black p-5 text-center">
+              <p className="text-xs uppercase tracking-wide text-[#e8c75a]/80">
                 Virtual Balance
               </p>
-              <p className="mt-1 text-2xl font-bold text-yellow-300">
+              <p className="mt-1 text-2xl font-bold text-[#e8c75a]">
                 {Number(profile?.solde_virtuel ?? 0).toFixed(2)} $
               </p>
             </div>
-            <div className="rounded-2xl border border-indigo-400/30 bg-indigo-400/10 p-5 text-center backdrop-blur-xl">
-              <p className="text-xs uppercase tracking-wide text-indigo-300/70">
+            <div className="rounded-xl border border-[#e8c75a]/40 bg-black p-5 text-center">
+              <p className="text-xs uppercase tracking-wide text-[#e8c75a]/80">
                 High Score
               </p>
-              <p className="mt-1 text-2xl font-bold text-indigo-300">
+              <p className="mt-1 text-2xl font-bold text-cyan-300">
                 {profile?.meilleur_score ?? 0} / 30
               </p>
             </div>
-            <div className="rounded-2xl border border-cyan-400/30 bg-cyan-400/10 p-5 text-center backdrop-blur-xl">
-              <p className="text-xs uppercase tracking-wide text-cyan-300/70">
+            <div className="rounded-xl border border-[#e8c75a]/40 bg-black p-5 text-center">
+              <p className="text-xs uppercase tracking-wide text-[#e8c75a]/80">
                 Games Played
               </p>
               <p className="mt-1 text-2xl font-bold text-cyan-300">
@@ -133,12 +133,12 @@ export default function DashboardPage() {
           {/* Play Now */}
           <Link
             href="/quiz"
-            className="group flex items-center justify-between rounded-3xl border border-white/10 bg-gradient-to-r from-indigo-600/40 via-purple-600/30 to-indigo-500/40 p-8 backdrop-blur-xl transition hover:scale-[1.01]"
+            className="group flex items-center justify-between rounded-xl border border-white/10 bg-gradient-to-b from-[#382a5c] to-[#523e85] p-8 transition hover:scale-[1.01]"
           >
-            <span className="text-3xl font-extrabold md:text-4xl">
+            <span className="text-3xl font-extrabold text-white md:text-4xl">
               Play Now
             </span>
-            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/20 text-3xl shadow-lg shadow-indigo-500/40 transition group-hover:scale-110">
+            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/20 text-3xl text-white shadow-lg shadow-black/40 transition group-hover:scale-110">
               ▶
             </span>
           </Link>
@@ -149,12 +149,12 @@ export default function DashboardPage() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex flex-col items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-5 text-center backdrop-blur-xl transition hover:scale-[1.03] hover:border-indigo-400/50 hover:bg-white/10"
+                className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-[#1a1a1a] p-5 text-center transition hover:scale-[1.03] hover:border-white/20"
               >
-                <span className="text-3xl drop-shadow-[0_4px_6px_rgba(99,102,241,0.5)]">
-                  {item.icon}
+                <span className="text-3xl">{item.icon}</span>
+                <span className="text-sm font-medium text-neutral-100">
+                  {item.label}
                 </span>
-                <span className="text-sm font-medium">{item.label}</span>
               </Link>
             ))}
           </div>
@@ -163,67 +163,67 @@ export default function DashboardPage() {
         {/* Colonne droite */}
         <aside className="flex w-full flex-col gap-6 lg:w-80">
           {/* User Profile */}
-          <div className="relative rounded-2xl border border-white/10 bg-white/5 p-6 text-center backdrop-blur-xl">
+          <div className="relative rounded-xl border border-white/10 bg-[#1a1a1a] p-6 text-center">
             <button
               onClick={() => setMenuOpen((o) => !o)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-white"
+              className="absolute right-4 top-4 text-neutral-400 hover:text-white"
             >
               ⋮
             </button>
             {menuOpen && (
-              <div className="absolute right-4 top-10 z-10 flex flex-col overflow-hidden rounded-xl border border-white/10 bg-slate-900 text-sm shadow-xl">
+              <div className="absolute right-4 top-10 z-10 flex flex-col overflow-hidden rounded-lg border border-white/10 bg-[#141414] text-sm shadow-xl">
                 <Link
                   href="/profile"
-                  className="px-4 py-2 text-left hover:bg-white/10"
+                  className="px-4 py-2 text-left hover:bg-white/5"
                 >
                   Mon profil
                 </Link>
                 <Link
                   href="/settings"
-                  className="px-4 py-2 text-left hover:bg-white/10"
+                  className="px-4 py-2 text-left hover:bg-white/5"
                 >
                   Paramètres
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="px-4 py-2 text-left text-red-300 hover:bg-white/10"
+                  className="px-4 py-2 text-left text-red-400 hover:bg-white/5"
                 >
                   Déconnexion
                 </button>
               </div>
             )}
 
-            <p className="mb-3 text-xs uppercase tracking-wide text-slate-400">
+            <p className="mb-3 text-xs uppercase tracking-wide text-neutral-400">
               User Profile
             </p>
-            <div className="relative mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-indigo-500 text-3xl font-bold">
+            <div className="relative mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-blue-500 text-3xl font-bold text-white">
               {profile?.pseudo?.[0]?.toUpperCase()}
-              <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-slate-900 bg-green-400" />
+              <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-[#1a1a1a] bg-green-400" />
             </div>
             <p className="font-semibold">{profile?.pseudo}</p>
           </div>
 
           {/* Activity Feed */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-            <p className="mb-4 text-xs uppercase tracking-wide text-slate-400">
+          <div className="rounded-xl border border-white/10 bg-[#1a1a1a] p-6">
+            <p className="mb-4 text-xs uppercase tracking-wide text-neutral-400">
               Activity Feed
             </p>
             {parties.length === 0 ? (
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-neutral-400">
                 Aucune activité récente. Joue ta première partie !
               </p>
             ) : (
               <div className="relative flex flex-col gap-4 border-l border-white/10 pl-4">
                 {parties.map((p) => (
                   <div key={p.id} className="relative">
-                    <span className="absolute -left-[21px] top-1 h-2 w-2 rounded-full bg-indigo-400" />
+                    <span className="absolute -left-[21px] top-1 h-2 w-2 rounded-full bg-cyan-400" />
                     <p className="text-sm">
                       Partie terminée : {p.score}/30 —{" "}
-                      <span className="text-yellow-400">
+                      <span className="text-[#e8c75a]">
                         +{Number(p.recompense).toFixed(2)} $
                       </span>
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-neutral-500">
                       {timeAgo(p.created_at)}
                     </p>
                   </div>
@@ -237,9 +237,9 @@ export default function DashboardPage() {
       {/* Support Chat flottant */}
       <Link
         href="/contact"
-        className="fixed bottom-6 right-6 flex items-center gap-2 rounded-full bg-indigo-500 px-5 py-3 text-sm font-semibold shadow-lg shadow-indigo-500/40 transition hover:scale-105 hover:bg-indigo-400"
+        className="fixed bottom-6 right-6 flex items-center gap-2 rounded-full bg-[#523e85] px-5 py-3 text-sm font-semibold text-[#e8c75a] shadow-lg shadow-black/40 transition hover:scale-105 hover:bg-[#604793]"
       >
-        💬 Support Chat
+        🧠 Support Chat
       </Link>
     </div>
   );
