@@ -74,7 +74,29 @@ export default function QuizPage() {
         return;
       }
 
-      const { data, error } = await supabase.from("questions").select("*");
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+      const { data: seenRows } = await supabase
+        .from("questions_vues")
+        .select("question_id")
+        .eq("user_id", userData.user.id)
+        .gte("vu_a", threeDaysAgo.toISOString());
+
+      const seenIds = (seenRows || []).map((r) => r.question_id);
+
+      let query = supabase.from("questions").select("*");
+      if (seenIds.length > 0) {
+        query = query.not("id", "in", `(${seenIds.join(",")})`);
+      }
+
+      let { data, error } = await query;
+
+      if (!error && (!data || data.length < 30)) {
+        const fallback = await supabase.from("questions").select("*");
+        data = fallback.data;
+        error = fallback.error;
+      }
 
       if (error || !data || data.length === 0) {
         console.error(error);
@@ -83,6 +105,13 @@ export default function QuizPage() {
       }
 
       const shuffled = shuffle(data).slice(0, 30);
+
+      const seenInsert = shuffled.map((q) => ({
+        user_id: userData.user.id,
+        question_id: q.id,
+      }));
+      supabase.from("questions_vues").insert(seenInsert);
+
       setQuestions(shuffled);
       setLoading(false);
     }
