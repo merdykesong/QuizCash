@@ -106,10 +106,10 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="rounded-xl border border-[#e8c75a]/40 bg-black p-5 text-center">
               <p className="text-xs uppercase tracking-wide text-[#e8c75a]/80">
-                Virtual Balance
+                Solde Actuel
               </p>
               <p className="mt-1 text-2xl font-bold text-[#e8c75a]">
-                {Number(profile?.solde_virtuel ?? 0).toFixed(2)} $
+                {Number(profile?.solde_actuel ?? 0).toFixed(2)} $
               </p>
             </div>
             <div className="rounded-xl border border-[#e8c75a]/40 bg-black p-5 text-center">
