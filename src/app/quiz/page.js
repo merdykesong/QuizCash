@@ -39,6 +39,7 @@ export default function QuizPage() {
   const [answers, setAnswers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [blockedMessage, setBlockedMessage] = useState("");
+  const [countdown, setCountdown] = useState("");
   const [finished, setFinished] = useState(false);
   const [timeLeft, setTimeLeft] = useState(TIME_PER_QUESTION);
   const [result, setResult] = useState(null);
@@ -88,6 +89,41 @@ export default function QuizPage() {
 
     init();
   }, [router]);
+
+  useEffect(() => {
+    if (!blockedMessage) return;
+
+    function updateCountdown() {
+      const now = new Date();
+      const nextMidnight = new Date(
+        Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate() + 1,
+          0,
+          0,
+          0
+        )
+      );
+      const diff = nextMidnight.getTime() - now.getTime();
+
+      const hours = String(Math.floor(diff / 3600000)).padStart(2, "0");
+      const minutes = String(Math.floor((diff % 3600000) / 60000)).padStart(
+        2,
+        "0"
+      );
+      const seconds = String(Math.floor((diff % 60000) / 1000)).padStart(
+        2,
+        "0"
+      );
+
+      setCountdown(`${hours}:${minutes}:${seconds}`);
+    }
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [blockedMessage]);
 
   const goToNext = useCallback(() => {
     setCurrentIndex((i) => {
@@ -168,6 +204,14 @@ export default function QuizPage() {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-950 px-4 text-white">
         <p className="max-w-sm text-center text-red-400">{blockedMessage}</p>
+        <div className="rounded-xl border border-white/10 bg-white/5 px-6 py-4 text-center">
+          <p className="text-xs uppercase tracking-wide text-slate-400">
+            Réinitialisation dans
+          </p>
+          <p className="mt-1 text-2xl font-bold text-indigo-300">
+            {countdown || "..."}
+          </p>
+        </div>
         <button
           onClick={() => router.push("/dashboard")}
           className="rounded-lg bg-indigo-500 px-5 py-2 font-medium hover:bg-indigo-400"
