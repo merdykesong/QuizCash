@@ -61,7 +61,7 @@ export default function ProfilePage() {
         <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
           <div className="mb-4 flex items-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-500 text-2xl font-bold">
-              {profile?.pseudo?.[0]?.toUpperCase()}
+              {profile?.avatar_emoji || profile?.pseudo?.[0]?.toUpperCase()}
             </div>
             <div>
               <p className="text-xl font-bold">{profile?.pseudo}</p>

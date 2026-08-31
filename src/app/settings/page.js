@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 
+const EMOJIS = ["😀","😎","🤖","🦁","🐯","🦊","🐺","🐸","🐵","🦄","👽","🎮","🏆","🔥","⚡","🌟","💎","🎯","🚀","🧠","🍀","🐉","🦅","🐍"];
+
 export default function SettingsPage() {
   const router = useRouter();
   const [pseudo, setPseudo] = useState("");
+  const [avatarEmoji, setAvatarEmoji] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(true);
   const [savingPseudo, setSavingPseudo] = useState(false);
@@ -24,15 +27,29 @@ export default function SettingsPage() {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("pseudo")
+        .select("pseudo, avatar_emoji")
         .eq("id", userData.user.id)
         .single();
 
       setPseudo(profileData?.pseudo || "");
+      setAvatarEmoji(profileData?.avatar_emoji || "");
       setLoading(false);
     }
     load();
   }, [router]);
+
+  async function handleSelectAvatar(emoji) {
+    setAvatarEmoji(emoji);
+    setMessage("");
+
+    const { data: userData } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_emoji: emoji })
+      .eq("id", userData.user.id);
+
+    setMessage(error ? "Erreur lors de la mise à jour." : "Avatar mis à jour ✅");
+  }
 
   async function handleUpdatePseudo(e) {
     e.preventDefault();
@@ -96,6 +113,34 @@ export default function SettingsPage() {
             {message}
           </p>
         )}
+
+        {/* Choisir un avatar */}
+        <div className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-6">
+          <h2 className="mb-4 text-lg font-semibold">Choisir un avatar</h2>
+          <div className="mb-4 flex items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-500 text-3xl">
+              {avatarEmoji || "?"}
+            </div>
+            <p className="text-sm text-slate-400">
+              Choisis un emoji ci-dessous pour l'utiliser comme avatar.
+            </p>
+          </div>
+          <div className="grid grid-cols-6 gap-2 sm:grid-cols-8">
+            {EMOJIS.map((emoji) => (
+              <button
+                key={emoji}
+                onClick={() => handleSelectAvatar(emoji)}
+                className={`flex h-11 w-11 items-center justify-center rounded-lg text-xl transition hover:scale-110 ${
+                  avatarEmoji === emoji
+                    ? "border-2 border-indigo-400 bg-indigo-500/20"
+                    : "border border-white/10 bg-white/5"
+                }`}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Modifier le pseudo */}
         <form

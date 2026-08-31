@@ -197,7 +197,7 @@ export default function DashboardPage() {
               User Profile
             </p>
             <div className="relative mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-blue-500 text-3xl font-bold text-white">
-              {profile?.pseudo?.[0]?.toUpperCase()}
+              {profile?.avatar_emoji || profile?.pseudo?.[0]?.toUpperCase()}
               <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-[#1a1a1a] bg-green-400" />
             </div>
             <p className="font-semibold">{profile?.pseudo}</p>
