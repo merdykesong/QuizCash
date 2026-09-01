@@ -44,11 +44,15 @@ export default function DashboardPage() {
         return;
       }
 
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", userData.user.id)
-        .single();
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Erreur chargement profil:", profileError);
+      }
 
       const { data: partiesData } = await supabase
         .from("parties")
