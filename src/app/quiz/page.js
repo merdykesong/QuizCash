@@ -46,8 +46,17 @@ export default function QuizPage() {
   const [result, setResult] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [showQuitModal, setShowQuitModal] = useState(false);
+  const [quitting, setQuitting] = useState(false);
   const answeredRef = useRef(false);
   const submittedRef = useRef(false);
+  const answersRef = useRef([]);
+
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
+
+  const isActive = !loading && !blockedMessage && !finished && questions.length > 0;
 
   // Vérifie la limite quotidienne, puis charge des questions via la fonction anti-répétition
   useEffect(() => {
@@ -90,6 +99,33 @@ export default function QuizPage() {
 
     init();
   }, [router]);
+
+  // Avertit avant de fermer l'onglet / recharger la page pendant une partie active
+  useEffect(() => {
+    function handleBeforeUnload(e) {
+      if (isActive) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isActive]);
+
+  // Intercepte le bouton "retour" du navigateur pendant une partie active
+  useEffect(() => {
+    if (!isActive) return;
+
+    window.history.pushState(null, "", window.location.href);
+
+    function handlePopState() {
+      window.history.pushState(null, "", window.location.href);
+      setShowQuitModal(true);
+    }
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [isActive]);
 
   useEffect(() => {
     if (!blockedMessage) return;
@@ -192,6 +228,12 @@ export default function QuizPage() {
 
     submit();
   }, [finished, answers]);
+
+  async function handleConfirmQuit() {
+    setQuitting(true);
+    await supabase.rpc("abandonner_partie", { reponses: answersRef.current });
+    router.push("/dashboard");
+  }
 
   if (loading) {
     return (
@@ -322,7 +364,14 @@ export default function QuizPage() {
   const isUrgent = timeLeft <= 5;
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 px-4 text-white">
+    <main className="relative flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 px-4 text-white">
+      <button
+        onClick={() => setShowQuitModal(true)}
+        className="absolute right-4 top-4 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300 transition hover:bg-white/10"
+      >
+        ✕ Quitter
+      </button>
+
       <div key={currentIndex} className="animate-question w-full max-w-xl">
         <div className="mb-6 flex items-center justify-between text-sm text-slate-400">
           <span>
@@ -360,6 +409,33 @@ export default function QuizPage() {
           ))}
         </div>
       </div>
+
+      {showQuitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900 p-6 text-center">
+            <p className="mb-2 text-lg font-semibold">Quitter la partie ?</p>
+            <p className="mb-6 text-sm text-slate-400">
+              Cette partie sera comptée comme <strong>perdue</strong> et
+              comptera dans ta limite quotidienne de {DAILY_LIMIT} parties.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowQuitModal(false)}
+                className="flex-1 rounded-lg border border-white/20 py-2.5 font-medium hover:bg-white/10"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleConfirmQuit}
+                disabled={quitting}
+                className="flex-1 rounded-lg bg-red-500 py-2.5 font-medium text-white hover:bg-red-400 disabled:opacity-50"
+              >
+                {quitting ? "..." : "Oui, quitter"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

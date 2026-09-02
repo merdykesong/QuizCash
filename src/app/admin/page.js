@@ -195,6 +195,16 @@ export default function AdminPage() {
           >
             👥 Utilisateurs
           </button>
+          <button
+            onClick={() => setTab("soldes")}
+            className={`rounded-full px-4 py-1.5 text-sm transition ${
+              tab === "soldes"
+                ? "bg-indigo-500 text-white"
+                : "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+            }`}
+          >
+            💰 Soldes
+          </button>
         </div>
 
         {tab === "retraits" && (
@@ -329,6 +339,58 @@ export default function AdminPage() {
               ))}
             </div>
           </>
+        )}
+
+        {tab === "soldes" && (
+          <div className="flex flex-col gap-2">
+            {[...profiles]
+              .sort((a, b) => Number(b.solde_virtuel) - Number(a.solde_virtuel))
+              .map((p, index) => {
+                const solde = Number(p.solde_virtuel);
+                const eligible = solde >= 10;
+                const proche = !eligible && solde >= 7;
+                const pct = Math.min((solde / 10) * 100, 100);
+                return (
+                  <div
+                    key={p.id}
+                    className={`rounded-xl border p-4 ${
+                      eligible
+                        ? "border-green-400/40 bg-green-400/10"
+                        : proche
+                        ? "border-yellow-400/40 bg-yellow-400/10"
+                        : "border-white/10 bg-white/5"
+                    }`}
+                  >
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-sm text-slate-400">
+                        #{index + 1} — {p.pseudo}
+                      </span>
+                      <span className="font-bold">
+                        {solde.toFixed(2)} $
+                        {eligible && (
+                          <span className="ml-2 text-xs text-green-300">
+                            ✅ Peut retirer
+                          </span>
+                        )}
+                        {proche && (
+                          <span className="ml-2 text-xs text-yellow-300">
+                            🟠 Proche (10 $)
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className={`h-full ${
+                          eligible ? "bg-green-400" : "bg-indigo-400"
+                        }`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
         )}
       </div>
     </main>
