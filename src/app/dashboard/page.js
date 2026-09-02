@@ -228,6 +228,12 @@ export default function DashboardPage() {
               <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-[#1a1a1a] bg-green-400" />
             </div>
             <p className="font-semibold">{profile?.pseudo}</p>
+            {profile?.champion_jusqua &&
+              new Date(profile.champion_jusqua) > new Date() && (
+                <p className="mt-1 text-xs font-semibold text-yellow-400">
+                  🏆 Champion de la semaine !
+                </p>
+              )}
           </div>
 
           {/* Activity Feed */}

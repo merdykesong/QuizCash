@@ -56,10 +56,10 @@ export default function LeaderboardPage() {
         ) : (
           <div className="flex flex-col gap-2">
             {players.map((p, index) => {
-              const isMe = p.id === currentUserId;
+              const isMe = p.est_moi;
               return (
                 <div
-                  key={p.id}
+                  key={index}
                   className={`flex items-center justify-between rounded-xl border px-5 py-4 ${
                     isMe
                       ? "border-indigo-400 bg-indigo-500/10"
@@ -72,6 +72,11 @@ export default function LeaderboardPage() {
                     </span>
                     <span className="font-medium">
                       {p.pseudo}
+                      {p.est_champion && (
+                        <span className="ml-2 text-xs text-yellow-400">
+                          🏆 Champion
+                        </span>
+                      )}
                       {isMe && (
                         <span className="ml-2 text-xs text-indigo-400">
                           (toi)

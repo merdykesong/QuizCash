@@ -39,6 +39,7 @@ export default function WithdrawPage() {
   const [fields, setFields] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -84,7 +85,9 @@ export default function WithdrawPage() {
       return !!fields.email_paypal;
     }
     if (selectedMethod === "mobile_money") {
-      return fields.operateur && fields.numero_telephone && fields.nom_titulaire;
+      return (
+        fields.operateur && fields.numero_telephone && fields.nom_titulaire
+      );
     }
     if (selectedMethod === "autre") {
       return !!fields.description;
@@ -125,6 +128,7 @@ export default function WithdrawPage() {
     }).catch((err) => console.error("Notification error:", err));
 
     await loadData();
+    setConfirmed(true);
     setStep("methods");
     setSelectedMethod(null);
     setFields({});
@@ -150,6 +154,17 @@ export default function WithdrawPage() {
             Retour
           </Link>
         </div>
+
+        {confirmed && (
+          <div className="animate-question mb-6 rounded-2xl border border-green-400/30 bg-green-400/10 p-6 text-center backdrop-blur">
+            <p className="mb-1 text-lg font-semibold text-green-300">
+              ✅ Retrait confirmé !
+            </p>
+            <p className="text-sm text-slate-200">
+              Vous recevrez votre argent retiré sous peu.
+            </p>
+          </div>
+        )}
 
         <div className="mb-8 rounded-2xl border border-white/10 bg-white/5 p-6 text-center backdrop-blur">
           <p className="text-xs uppercase tracking-wide text-slate-400">
@@ -217,6 +232,7 @@ export default function WithdrawPage() {
                   onClick={() => {
                     setSelectedMethod(m.id);
                     setFields({});
+                    setConfirmed(false);
                     setStep("form");
                   }}
                   className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-5 transition hover:scale-[1.02] hover:border-indigo-400 hover:bg-white/10"
@@ -274,11 +290,24 @@ export default function WithdrawPage() {
 
             {selectedMethod === "mobile_money" && (
               <div className="flex flex-col gap-3">
-                <Field
-                  label="Opérateur"
-                  value={fields.operateur_mobile_money || ""}
-                  onChange={(v) => handleFieldChange("operateur_mobile_money", v)}
-                />
+                <div>
+                  <label className="mb-1 block text-sm text-slate-300">
+                    Opérateur
+                  </label>
+                  <select
+                    value={fields.operateur || ""}
+                    onChange={(e) =>
+                      handleFieldChange("operateur", e.target.value)
+                    }
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-indigo-400"
+                  >
+                    <option value="">-- Choisir --</option>
+                    <option value="Airtel money">Airtel money</option>
+                    <option value="M-pesa">M-pesa</option>
+                    <option value="Orange money">Orange money</option>
+                    <option value="Africell money">Africell money</option>
+                  </select>
+                </div>
                 <Field
                   label="Numéro de téléphone"
                   value={fields.numero_telephone || ""}
@@ -341,9 +370,12 @@ export default function WithdrawPage() {
             </div>
 
             <p className="mb-4 text-xs text-slate-500">
-              Rappel : cette version est ultra sécurisée et ne stocke aucune information sensible.
-               Les détails de votre méthode de retrait sont uniquement utilisés pour traiter votre demande de retrait et ne sont pas conservés.
-               Ne partagez jamais vos informations sensibles avec des tiers mais aussi écrivez-les correctement pour éviter tout problème de traitement de retrait.
+              Rappel : cette version est ultra sécurisée et ne stocke aucune
+              information sensible. Les détails de votre méthode de retrait
+              sont uniquement utilisés pour traiter votre demande de retrait
+              et ne sont pas conservés. Ne partagez jamais vos informations
+              sensibles avec des tiers mais aussi écrivez-les correctement
+              pour éviter tout problème de traitement de retrait.
             </p>
 
             <div className="flex gap-3">

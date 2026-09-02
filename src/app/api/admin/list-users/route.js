@@ -1,10 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseAuth = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
-
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -18,14 +13,20 @@ export async function POST(request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const { data: userData, error: userError } = await supabaseAuth.auth.getUser(
+  const supabaseAsUser = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    { global: { headers: { Authorization: `Bearer ${token}` } } }
+  );
+
+  const { data: userData, error: userError } = await supabaseAsUser.auth.getUser(
     token
   );
   if (userError || !userData.user) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const { data: profileData } = await supabaseAuth
+  const { data: profileData } = await supabaseAsUser
     .from("profiles")
     .select("is_admin")
     .eq("id", userData.user.id)
