@@ -35,6 +35,7 @@ export default function AdminPage() {
   const [filter, setFilter] = useState("toutes");
   const [expandedId, setExpandedId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [recentGames, setRecentGames] = useState([]);
   const [emailMap, setEmailMap] = useState({});
 
   useEffect(() => {
@@ -71,6 +72,14 @@ export default function AdminPage() {
       .from("profiles")
       .select("*")
       .order("created_at", { ascending: false });
+
+    const { data: recentGamesData } = await supabase
+      .from("parties")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    setRecentGames(recentGamesData || []);
 
     const map = {};
     (profilesData || []).forEach((p) => {
@@ -204,6 +213,16 @@ export default function AdminPage() {
             }`}
           >
             💰 Soldes
+          </button>
+          <button
+            onClick={() => setTab("parties")}
+            className={`rounded-full px-4 py-1.5 text-sm transition ${
+              tab === "parties"
+                ? "bg-indigo-500 text-white"
+                : "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+            }`}
+          >
+            🎮 Parties récentes
           </button>
         </div>
 
@@ -393,6 +412,60 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+              {tab === "parties" && (
+          <div className="flex flex-col gap-2">
+            {recentGames.length === 0 ? (
+              <p className="text-slate-400">Aucune partie enregistrée.</p>
+            ) : (
+              recentGames.map((g) => (
+                <div
+                  key={g.id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-4 text-sm"
+                >
+                  <span className="font-medium">
+                    {pseudoMap[g.user_id] || "Inconnu"}
+                  </span>
+                  <span className="text-slate-400">
+                    {new Date(g.created_at).toLocaleString("fr-FR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                  <span>
+                    Score : <strong>{g.score}/30</strong>
+                  </span>
+                  <span className="text-slate-400">
+                    {g.solde_avant !== null
+                      ? `${Number(g.solde_avant).toFixed(2)} $`
+                      : "—"}{" "}
+                    →{" "}
+                    <span
+                      className={
+                        g.recompense > 0 ? "text-green-400" : "text-slate-300"
+                      }
+                    >
+                      {g.solde_apres !== null
+                        ? `${Number(g.solde_apres).toFixed(2)} $`
+                        : "—"}
+                    </span>
+                  </span>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs ${
+                      g.recompense > 0
+                        ? "bg-green-400/20 text-green-300"
+                        : "bg-red-400/20 text-red-300"
+                    }`}
+                  >
+                    +{Number(g.recompense).toFixed(2)} $
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        )}
     </main>
   );
 }
