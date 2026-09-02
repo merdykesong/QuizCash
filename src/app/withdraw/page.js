@@ -276,8 +276,8 @@ export default function WithdrawPage() {
               <div className="flex flex-col gap-3">
                 <Field
                   label="Opérateur"
-                  value={fields.operateur || ""}
-                  onChange={(v) => handleFieldChange("operateur", v)}
+                  value={fields.operateur_mobile_money || ""}
+                  onChange={(v) => handleFieldChange("operateur_mobile_money", v)}
                 />
                 <Field
                   label="Numéro de téléphone"
@@ -341,8 +341,9 @@ export default function WithdrawPage() {
             </div>
 
             <p className="mb-4 text-xs text-slate-500">
-              Rappel : cette version est en mode simulation. Aucun transfert
-              réel ne sera effectué.
+              Rappel : cette version est ultra sécurisée et ne stocke aucune information sensible.
+               Les détails de votre méthode de retrait sont uniquement utilisés pour traiter votre demande de retrait et ne sont pas conservés.
+               Ne partagez jamais vos informations sensibles avec des tiers mais aussi écrivez-les correctement pour éviter tout problème de traitement de retrait.
             </p>
 
             <div className="flex gap-3">

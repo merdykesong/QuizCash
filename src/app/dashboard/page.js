@@ -34,6 +34,7 @@ export default function DashboardPage() {
   const [parties, setParties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [monClassement, setMonClassement] = useState(null);
 
   useEffect(() => {
     async function loadData() {
@@ -60,8 +61,11 @@ export default function DashboardPage() {
         .order("created_at", { ascending: false })
         .limit(5);
 
+      const { data: rangData } = await supabase.rpc("obtenir_mon_classement");
+
       setProfile(profileData);
       setParties(partiesData || []);
+      setMonClassement(rangData);
       setLoading(false);
     }
 
@@ -130,6 +134,25 @@ export default function DashboardPage() {
               </p>
               <p className="mt-1 text-2xl font-bold text-cyan-300">
                 {profile?.parties_jouees ?? 0}
+              </p>
+            </div>
+          </div>
+
+          {/* Classement personnel + encouragement */}
+          <div className="rounded-2xl border border-[#e8c75a]/30 bg-gradient-to-r from-[#382a5c]/40 to-[#523e85]/20 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-400">
+                  Ta position
+                </p>
+                <p className="text-2xl font-bold text-[#e8c75a]">
+                  {monClassement ? `#${monClassement}` : "—"}
+                </p>
+              </div>
+              <p className="max-w-xs text-sm text-slate-200">
+                🏆 Termine <strong>1er du classement</strong> cette semaine et
+                gagne un bonus de <strong className="text-[#e8c75a]">+2,50 $</strong>{" "}
+                pendant les  jours suivants !
               </p>
             </div>
           </div>

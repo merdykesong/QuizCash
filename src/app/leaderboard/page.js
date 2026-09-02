@@ -20,12 +20,7 @@ export default function LeaderboardPage() {
       }
       setCurrentUserId(userData.user.id);
 
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, pseudo, meilleur_score, parties_jouees")
-        .order("meilleur_score", { ascending: false })
-        .order("parties_jouees", { ascending: true })
-        .limit(20);
+      const { data, error } = await supabase.rpc("obtenir_classement");
 
       if (!error) setPlayers(data);
       setLoading(false);
