@@ -5,13 +5,16 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 
-const EMOJIS = ["😀","😎","🤖","🦁","🐯","🦊","🐺","🐸","🐵","🦄","👽","🎮","🏆","🔥","⚡","🌟","💎","🎯","🚀","🧠","🍀","🐉","🦅","🐍"];
+const EMOJIS = ["😀","😎","🤖","🦁","🇫🇷","😁","🐺","🇨🇩","🪩","🥇","👽","🎮","🏆","🔥","⚡","🌟","💎","🎯","🚀","🧠","🍀","🐉","🦅","🔞"];
 
 export default function SettingsPage() {
   const router = useRouter();
+  const [email, setEmail] = useState("");
   const [pseudo, setPseudo] = useState("");
   const [avatarEmoji, setAvatarEmoji] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(true);
   const [savingPseudo, setSavingPseudo] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
@@ -24,6 +27,8 @@ export default function SettingsPage() {
         router.push("/login");
         return;
       }
+
+      setEmail(userData.user.email);
 
       const { data: profileData } = await supabase
         .from("profiles")
@@ -68,17 +73,40 @@ export default function SettingsPage() {
 
   async function handleUpdatePassword(e) {
     e.preventDefault();
-    if (newPassword.length < 6) {
-      setMessage("Le mot de passe doit contenir au moins 6 caractères.");
+    setMessage("");
+
+    if (!currentPassword) {
+      setMessage("Entre ton mot de passe actuel.");
       return;
     }
+    if (newPassword.length < 6) {
+      setMessage("Le nouveau mot de passe doit contenir au moins 6 caractères.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setMessage("Les nouveaux mots de passe ne correspondent pas.");
+      return;
+    }
+
     setSavingPassword(true);
-    setMessage("");
+
+    const { error: reauthError } = await supabase.auth.signInWithPassword({
+      email,
+      password: currentPassword,
+    });
+
+    if (reauthError) {
+      setSavingPassword(false);
+      setMessage("Mot de passe actuel incorrect.");
+      return;
+    }
 
     const { error } = await supabase.auth.updateUser({ password: newPassword });
 
     setSavingPassword(false);
+    setCurrentPassword("");
     setNewPassword("");
+    setConfirmPassword("");
     setMessage(error ? error.message : "Mot de passe mis à jour ✅");
   }
 
@@ -171,6 +199,18 @@ export default function SettingsPage() {
           className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-6"
         >
           <h2 className="mb-4 text-lg font-semibold">Paramètres du compte</h2>
+
+          <label className="mb-1 block text-sm text-slate-300">
+            Mot de passe actuel
+          </label>
+          <input
+            type="password"
+            required
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            className="mb-4 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-indigo-400"
+          />
+
           <label className="mb-1 block text-sm text-slate-300">
             Nouveau mot de passe
           </label>
@@ -181,6 +221,18 @@ export default function SettingsPage() {
             onChange={(e) => setNewPassword(e.target.value)}
             className="mb-4 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-indigo-400"
           />
+
+          <label className="mb-1 block text-sm text-slate-300">
+            Confirmer le nouveau mot de passe
+          </label>
+          <input
+            type="password"
+            required
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="mb-4 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-indigo-400"
+          />
+
           <button
             type="submit"
             disabled={savingPassword}
