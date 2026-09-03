@@ -90,18 +90,10 @@ export default function SettingsPage() {
 
     setSavingPassword(true);
 
-    const { error: reauthError } = await supabase.auth.signInWithPassword({
-      email,
-      password: currentPassword,
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+      current_password: currentPassword,
     });
-
-    if (reauthError) {
-      setSavingPassword(false);
-      setMessage("Mot de passe actuel incorrect.");
-      return;
-    }
-
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
 
     setSavingPassword(false);
     setCurrentPassword("");
