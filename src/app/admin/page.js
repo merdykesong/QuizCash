@@ -32,11 +32,16 @@ export default function AdminPage() {
   const [requests, setRequests] = useState([]);
   const [profiles, setProfiles] = useState([]);
   const [pseudoMap, setPseudoMap] = useState({});
+  const [emailMap, setEmailMap] = useState({});
+  const [recentGames, setRecentGames] = useState([]);
   const [filter, setFilter] = useState("toutes");
   const [expandedId, setExpandedId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
-  const [recentGames, setRecentGames] = useState([]);
-  const [emailMap, setEmailMap] = useState({});
+
+  const [adjustingId, setAdjustingId] = useState(null);
+  const [adjustAmount, setAdjustAmount] = useState("");
+  const [adjustError, setAdjustError] = useState("");
+  const [adjusting, setAdjusting] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -79,8 +84,6 @@ export default function AdminPage() {
       .order("created_at", { ascending: false })
       .limit(50);
 
-    setRecentGames(recentGamesData || []);
-
     const map = {};
     (profilesData || []).forEach((p) => {
       map[p.id] = p.pseudo;
@@ -89,6 +92,7 @@ export default function AdminPage() {
     setPseudoMap(map);
     setRequests(requestsData || []);
     setProfiles(profilesData || []);
+    setRecentGames(recentGamesData || []);
 
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
@@ -162,6 +166,34 @@ export default function AdminPage() {
     setProfiles((prev) => prev.filter((p) => p.id !== targetUserId));
   }
 
+  async function handleAdjustBalance(userId, action) {
+    setAdjustError("");
+    const amount = Number(adjustAmount);
+    if (!amount || amount <= 0) {
+      setAdjustError("Entre un montant valide.");
+      return;
+    }
+
+    setAdjusting(true);
+    const { data, error } = await supabase.rpc("admin_ajuster_solde", {
+      p_user_id: userId,
+      p_montant: amount,
+      p_action: action,
+    });
+    setAdjusting(false);
+
+    if (error) {
+      setAdjustError(error.message);
+      return;
+    }
+
+    setProfiles((prev) =>
+      prev.map((p) => (p.id === userId ? { ...p, solde_virtuel: data } : p))
+    );
+    setAdjustingId(null);
+    setAdjustAmount("");
+  }
+
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
@@ -188,7 +220,7 @@ export default function AdminPage() {
           </Link>
         </div>
 
-        <div className="mb-8 flex gap-2">
+        <div className="mb-8 flex flex-wrap gap-2">
           <button
             onClick={() => setTab("retraits")}
             className={`rounded-full px-4 py-1.5 text-sm transition ${
@@ -304,6 +336,12 @@ export default function AdminPage() {
                               </option>
                             ))}
                           </select>
+                          {r.status === "refuse" && (
+                            <p className="mt-2 text-xs text-green-400">
+                              💡 Passer en "Refusé" rembourse automatiquement
+                              l'utilisateur.
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -326,41 +364,98 @@ export default function AdminPage() {
             </div>
 
             <div className="flex flex-col gap-2">
-              {profiles.map((p) => (
-                <div
-                  key={p.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-5 py-4"
-                >
-                  <div>
-                    <p className="font-medium">
-                      {p.pseudo}
-                      {p.id === currentUserId && (
-                        <span className="ml-2 text-xs text-indigo-400">(toi)</span>
-                      )}
-                      {p.is_admin && (
-                        <span className="ml-2 text-xs text-yellow-400">admin</span>
-                      )}
-                    </p>
-                    <p className="text-xs text-slate-500">{emailMap[p.id]}</p>
-                    <p className="text-xs text-slate-400">
-                      Inscrit le{" "}
-                      {new Date(p.created_at).toLocaleDateString("fr-FR")} •{" "}
-                      {p.parties_jouees} partie(s) • Solde{" "}
-                      {Number(p.solde_virtuel).toFixed(2)} $
-                    </p>
-                  </div>
+              {profiles.map((p) => {
+                const isAdjusting = adjustingId === p.id;
+                return (
+                  <div
+                    key={p.id}
+                    className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/5 px-5 py-4"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium">
+                          {p.pseudo}
+                          {p.id === currentUserId && (
+                            <span className="ml-2 text-xs text-indigo-400">
+                              (toi)
+                            </span>
+                          )}
+                          {p.is_admin && (
+                            <span className="ml-2 text-xs text-yellow-400">
+                              admin
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-xs text-slate-500">{emailMap[p.id]}</p>
+                        <p className="text-xs text-slate-400">
+                          Inscrit le{" "}
+                          {new Date(p.created_at).toLocaleDateString("fr-FR")} •{" "}
+                          {p.parties_jouees} partie(s) • Solde{" "}
+                          {Number(p.solde_virtuel).toFixed(2)} $
+                        </p>
+                      </div>
 
-                  {p.id !== currentUserId && (
-                    <button
-                      onClick={() => handleDeleteUser(p.id, p.pseudo)}
-                      disabled={deletingId === p.id}
-                      className="rounded-lg bg-red-500/20 px-4 py-2 text-sm font-medium text-red-300 transition hover:bg-red-500/30 disabled:opacity-50"
-                    >
-                      {deletingId === p.id ? "Suppression..." : "🗑️ Supprimer"}
-                    </button>
-                  )}
-                </div>
-              ))}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setAdjustError("");
+                            setAdjustAmount("");
+                            setAdjustingId(isAdjusting ? null : p.id);
+                          }}
+                          className="rounded-lg bg-indigo-500/20 px-4 py-2 text-sm font-medium text-indigo-300 transition hover:bg-indigo-500/30"
+                        >
+                          💰 Ajuster solde
+                        </button>
+
+                        {p.id !== currentUserId && (
+                          <button
+                            onClick={() => handleDeleteUser(p.id, p.pseudo)}
+                            disabled={deletingId === p.id}
+                            className="rounded-lg bg-red-500/20 px-4 py-2 text-sm font-medium text-red-300 transition hover:bg-red-500/30 disabled:opacity-50"
+                          >
+                            {deletingId === p.id ? "Suppression..." : "🗑️ Supprimer"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {isAdjusting && (
+                      <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+                        {adjustError && (
+                          <p className="mb-2 text-sm text-red-400">{adjustError}</p>
+                        )}
+                        <label className="mb-1 block text-sm text-slate-300">
+                          Montant ($)
+                        </label>
+                        <input
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          value={adjustAmount}
+                          onChange={(e) => setAdjustAmount(e.target.value)}
+                          className="mb-3 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-indigo-400"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleAdjustBalance(p.id, "ajouter")}
+                            disabled={adjusting}
+                            className="flex-1 rounded-lg bg-green-500/20 py-2 text-sm font-medium text-green-300 hover:bg-green-500/30 disabled:opacity-50"
+                          >
+                            ➕ Envoyer
+                          </button>
+                          <button
+                            onClick={() => handleAdjustBalance(p.id, "retirer")}
+                            disabled={adjusting}
+                            className="flex-1 rounded-lg bg-red-500/20 py-2 text-sm font-medium text-red-300 hover:bg-red-500/30 disabled:opacity-50"
+                          >
+                            ➖ Retirer
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </>
         )}
@@ -416,8 +511,8 @@ export default function AdminPage() {
               })}
           </div>
         )}
-      </div>
-              {tab === "parties" && (
+
+        {tab === "parties" && (
           <div className="flex flex-col gap-2">
             {recentGames.length === 0 ? (
               <p className="text-slate-400">Aucune partie enregistrée.</p>
@@ -471,6 +566,7 @@ export default function AdminPage() {
             )}
           </div>
         )}
+      </div>
     </main>
   );
 }
