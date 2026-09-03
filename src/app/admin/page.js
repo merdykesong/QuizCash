@@ -117,10 +117,15 @@ export default function AdminPage() {
   }
 
   async function updateStatus(id, newStatus) {
-    await supabase
-      .from("withdrawal_requests")
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
-      .eq("id", id);
+    const { error } = await supabase.rpc("admin_changer_statut_retrait", {
+      p_request_id: id,
+      p_nouveau_statut: newStatus,
+    });
+
+    if (error) {
+      alert("Erreur: " + error.message);
+      return;
+    }
 
     setRequests((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r))

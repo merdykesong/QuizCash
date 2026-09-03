@@ -36,6 +36,7 @@ export default function WithdrawPage() {
   const [history, setHistory] = useState([]);
   const [step, setStep] = useState("methods");
   const [selectedMethod, setSelectedMethod] = useState(null);
+  const [montant, setMontant] = useState("");
   const [fields, setFields] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -77,7 +78,13 @@ export default function WithdrawPage() {
     setFields((prev) => ({ ...prev, [key]: value }));
   }
 
+  function montantIsValid() {
+    const m = Number(montant);
+    return montant !== "" && m >= MIN_WITHDRAWAL && m <= solde;
+  }
+
   function fieldsAreValid() {
+    if (!montantIsValid()) return false;
     if (selectedMethod === "banque") {
       return fields.nom_titulaire && fields.nom_banque && fields.numero_compte;
     }
@@ -102,6 +109,7 @@ export default function WithdrawPage() {
     const { data, error: rpcError } = await supabase.rpc("demander_retrait", {
       p_methode: selectedMethod,
       p_details: fields,
+      p_montant: Number(montant),
     });
 
     setSubmitting(false);
@@ -132,6 +140,7 @@ export default function WithdrawPage() {
     setStep("methods");
     setSelectedMethod(null);
     setFields({});
+    setMontant("");
   }
 
   if (loading) {
@@ -232,6 +241,7 @@ export default function WithdrawPage() {
                   onClick={() => {
                     setSelectedMethod(m.id);
                     setFields({});
+                    setMontant("");
                     setConfirmed(false);
                     setStep("form");
                   }}
@@ -258,6 +268,28 @@ export default function WithdrawPage() {
             <h2 className="mb-4 text-lg font-semibold">
               {METHODS.find((m) => m.id === selectedMethod)?.label}
             </h2>
+
+            <div className="mb-4">
+              <label className="mb-1 block text-sm text-slate-300">
+                Montant à retirer (min. {MIN_WITHDRAWAL.toFixed(2)} $, max.{" "}
+                {solde.toFixed(2)} $)
+              </label>
+              <input
+                type="number"
+                min={MIN_WITHDRAWAL}
+                max={solde}
+                step="0.01"
+                value={montant}
+                onChange={(e) => setMontant(e.target.value)}
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-indigo-400"
+              />
+              {montant !== "" && !montantIsValid() && (
+                <p className="mt-1 text-xs text-red-400">
+                  Le montant doit être entre {MIN_WITHDRAWAL.toFixed(2)} $ et{" "}
+                  {solde.toFixed(2)} $.
+                </p>
+              )}
+            </div>
 
             {selectedMethod === "banque" && (
               <div className="flex flex-col gap-3">
@@ -357,7 +389,7 @@ export default function WithdrawPage() {
               </p>
               <p>
                 <span className="text-slate-400">Montant : </span>
-                {solde.toFixed(2)} $
+                {Number(montant).toFixed(2)} $
               </p>
               <div className="text-slate-400">
                 Informations (masquées partiellement) :
