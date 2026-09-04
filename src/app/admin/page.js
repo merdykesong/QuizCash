@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
+import { Sidebar } from "@/components/Sidebar";
 
 const STATUS_LABELS = {
   en_attente: { emoji: "🟡", label: "En attente" },
@@ -58,7 +58,7 @@ export default function AdminPage() {
       .from("profiles")
       .select("is_admin")
       .eq("id", userData.user.id)
-      .single();
+      .maybeSingle();
 
     if (!profileData?.is_admin) {
       router.push("/dashboard");
@@ -196,7 +196,7 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-900">
         <p>Chargement...</p>
       </main>
     );
@@ -208,59 +208,32 @@ export default function AdminPage() {
     filter === "toutes" ? requests : requests.filter((r) => r.status === filter);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 px-4 py-10 text-white">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-3xl font-bold">🛠️ Administration</h1>
-          <Link
-            href="/dashboard"
-            className="rounded-lg border border-white/20 px-4 py-2 text-sm hover:bg-white/10"
-          >
-            Retour
-          </Link>
-        </div>
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <Sidebar isAdmin={true} />
+      <div className="mx-auto max-w-4xl p-4 pb-28 pt-24 sm:p-6 sm:pb-28 sm:pt-28 lg:p-8 lg:pb-8 lg:pt-28">
+        <h1 className="mb-6 text-2xl font-extrabold sm:text-3xl">
+          🛡️ Administration
+        </h1>
 
         <div className="mb-8 flex flex-wrap gap-2">
-          <button
-            onClick={() => setTab("retraits")}
-            className={`rounded-full px-4 py-1.5 text-sm transition ${
-              tab === "retraits"
-                ? "bg-indigo-500 text-white"
-                : "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
-            }`}
-          >
-            💳 Retraits
-          </button>
-          <button
-            onClick={() => setTab("utilisateurs")}
-            className={`rounded-full px-4 py-1.5 text-sm transition ${
-              tab === "utilisateurs"
-                ? "bg-indigo-500 text-white"
-                : "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
-            }`}
-          >
-            👥 Utilisateurs
-          </button>
-          <button
-            onClick={() => setTab("soldes")}
-            className={`rounded-full px-4 py-1.5 text-sm transition ${
-              tab === "soldes"
-                ? "bg-indigo-500 text-white"
-                : "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
-            }`}
-          >
-            💰 Soldes
-          </button>
-          <button
-            onClick={() => setTab("parties")}
-            className={`rounded-full px-4 py-1.5 text-sm transition ${
-              tab === "parties"
-                ? "bg-indigo-500 text-white"
-                : "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
-            }`}
-          >
-            🎮 Parties récentes
-          </button>
+          {[
+            { key: "retraits", label: "💳 Retraits" },
+            { key: "utilisateurs", label: "👥 Utilisateurs" },
+            { key: "soldes", label: "💰 Soldes" },
+            { key: "parties", label: "🎮 Parties récentes" },
+          ].map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                tab === t.key
+                  ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm"
+                  : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
         {tab === "retraits" && (
@@ -272,8 +245,8 @@ export default function AdminPage() {
                   onClick={() => setFilter(f.key)}
                   className={`rounded-full px-4 py-1.5 text-sm transition ${
                     filter === f.key
-                      ? "bg-indigo-500 text-white"
-                      : "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                      ? "bg-violet-600 text-white"
+                      : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                   }`}
                 >
                   {f.label}
@@ -282,7 +255,7 @@ export default function AdminPage() {
             </div>
 
             {filtered.length === 0 ? (
-              <p className="text-slate-400">Aucune demande dans cette catégorie.</p>
+              <p className="text-slate-500">Aucune demande dans cette catégorie.</p>
             ) : (
               <div className="flex flex-col gap-3">
                 {filtered.map((r) => {
@@ -290,7 +263,7 @@ export default function AdminPage() {
                   return (
                     <div
                       key={r.id}
-                      className="overflow-hidden rounded-xl border border-white/10 bg-white/5"
+                      className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
                     >
                       <button
                         onClick={() => setExpandedId(isOpen ? null : r.id)}
@@ -300,35 +273,35 @@ export default function AdminPage() {
                         <span className="font-medium">
                           {pseudoMap[r.user_id] || "Inconnu"}
                         </span>
-                        <span className="font-bold text-yellow-400">
+                        <span className="font-bold text-violet-600">
                           {Number(r.montant).toFixed(2)} $
                         </span>
                         <span className="text-sm text-slate-400">{r.methode}</span>
                         <span className="text-sm text-slate-400">
                           {new Date(r.created_at).toLocaleDateString("fr-FR")}
                         </span>
-                        <span className="rounded-full bg-white/10 px-3 py-1 text-xs">
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs">
                           {STATUS_LABELS[r.status].emoji}{" "}
                           {STATUS_LABELS[r.status].label}
                         </span>
                       </button>
 
                       {isOpen && (
-                        <div className="animate-question border-t border-white/10 px-5 py-4">
-                          <p className="mb-2 text-sm font-semibold text-slate-300">
+                        <div className="border-t border-slate-100 px-5 py-4">
+                          <p className="mb-2 text-sm font-semibold text-slate-600">
                             Détails :
                           </p>
-                          <pre className="mb-4 overflow-x-auto rounded-lg bg-black/30 p-3 text-xs text-slate-300">
+                          <pre className="mb-4 overflow-x-auto rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
                             {JSON.stringify(r.details, null, 2)}
                           </pre>
 
-                          <label className="mb-1 block text-sm text-slate-300">
+                          <label className="mb-1 block text-sm text-slate-500">
                             Changer le statut :
                           </label>
                           <select
                             value={r.status}
                             onChange={(e) => updateStatus(r.id, e.target.value)}
-                            className="rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm outline-none focus:border-indigo-400"
+                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-violet-400"
                           >
                             {Object.entries(STATUS_LABELS).map(([key, val]) => (
                               <option key={key} value={key}>
@@ -337,7 +310,7 @@ export default function AdminPage() {
                             ))}
                           </select>
                           {r.status === "refuse" && (
-                            <p className="mt-2 text-xs text-green-400">
+                            <p className="mt-2 text-xs text-emerald-600">
                               💡 Passer en "Refusé" rembourse automatiquement
                               l'utilisateur.
                             </p>
@@ -354,11 +327,11 @@ export default function AdminPage() {
 
         {tab === "utilisateurs" && (
           <>
-            <div className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-5 text-center">
+            <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm">
               <p className="text-xs uppercase tracking-wide text-slate-400">
                 Nombre total d'utilisateurs
               </p>
-              <p className="mt-1 text-3xl font-extrabold text-indigo-400">
+              <p className="mt-1 text-3xl font-extrabold text-violet-600">
                 {profiles.length}
               </p>
             </div>
@@ -369,24 +342,24 @@ export default function AdminPage() {
                 return (
                   <div
                     key={p.id}
-                    className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/5 px-5 py-4"
+                    className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <p className="font-medium">
                           {p.pseudo}
                           {p.id === currentUserId && (
-                            <span className="ml-2 text-xs text-indigo-400">
+                            <span className="ml-2 text-xs text-violet-500">
                               (toi)
                             </span>
                           )}
                           {p.is_admin && (
-                            <span className="ml-2 text-xs text-yellow-400">
+                            <span className="ml-2 text-xs text-amber-500">
                               admin
                             </span>
                           )}
                         </p>
-                        <p className="text-xs text-slate-500">{emailMap[p.id]}</p>
+                        <p className="text-xs text-slate-400">{emailMap[p.id]}</p>
                         <p className="text-xs text-slate-400">
                           Inscrit le{" "}
                           {new Date(p.created_at).toLocaleDateString("fr-FR")} •{" "}
@@ -402,7 +375,7 @@ export default function AdminPage() {
                             setAdjustAmount("");
                             setAdjustingId(isAdjusting ? null : p.id);
                           }}
-                          className="rounded-lg bg-indigo-500/20 px-4 py-2 text-sm font-medium text-indigo-300 transition hover:bg-indigo-500/30"
+                          className="rounded-xl bg-violet-50 px-4 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-100"
                         >
                           💰 Ajuster solde
                         </button>
@@ -411,7 +384,7 @@ export default function AdminPage() {
                           <button
                             onClick={() => handleDeleteUser(p.id, p.pseudo)}
                             disabled={deletingId === p.id}
-                            className="rounded-lg bg-red-500/20 px-4 py-2 text-sm font-medium text-red-300 transition hover:bg-red-500/30 disabled:opacity-50"
+                            className="rounded-xl bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-100 disabled:opacity-50"
                           >
                             {deletingId === p.id ? "Suppression..." : "🗑️ Supprimer"}
                           </button>
@@ -420,11 +393,11 @@ export default function AdminPage() {
                     </div>
 
                     {isAdjusting && (
-                      <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                         {adjustError && (
-                          <p className="mb-2 text-sm text-red-400">{adjustError}</p>
+                          <p className="mb-2 text-sm text-red-500">{adjustError}</p>
                         )}
-                        <label className="mb-1 block text-sm text-slate-300">
+                        <label className="mb-1 block text-sm text-slate-500">
                           Montant ($)
                         </label>
                         <input
@@ -433,20 +406,20 @@ export default function AdminPage() {
                           step="0.01"
                           value={adjustAmount}
                           onChange={(e) => setAdjustAmount(e.target.value)}
-                          className="mb-3 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-indigo-400"
+                          className="mb-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-violet-400"
                         />
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleAdjustBalance(p.id, "ajouter")}
                             disabled={adjusting}
-                            className="flex-1 rounded-lg bg-green-500/20 py-2 text-sm font-medium text-green-300 hover:bg-green-500/30 disabled:opacity-50"
+                            className="flex-1 rounded-xl bg-emerald-50 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
                           >
                             ➕ Envoyer
                           </button>
                           <button
                             onClick={() => handleAdjustBalance(p.id, "retirer")}
                             disabled={adjusting}
-                            className="flex-1 rounded-lg bg-red-500/20 py-2 text-sm font-medium text-red-300 hover:bg-red-500/30 disabled:opacity-50"
+                            className="flex-1 rounded-xl bg-red-50 py-2 text-sm font-medium text-red-600 hover:bg-red-100 disabled:opacity-50"
                           >
                             ➖ Retirer
                           </button>
@@ -472,36 +445,36 @@ export default function AdminPage() {
                 return (
                   <div
                     key={p.id}
-                    className={`rounded-xl border p-4 ${
+                    className={`rounded-2xl border p-4 shadow-sm ${
                       eligible
-                        ? "border-green-400/40 bg-green-400/10"
+                        ? "border-emerald-200 bg-emerald-50"
                         : proche
-                        ? "border-yellow-400/40 bg-yellow-400/10"
-                        : "border-white/10 bg-white/5"
+                        ? "border-amber-200 bg-amber-50"
+                        : "border-slate-200 bg-white"
                     }`}
                   >
                     <div className="mb-2 flex items-center justify-between">
-                      <span className="text-sm text-slate-400">
+                      <span className="text-sm text-slate-500">
                         #{index + 1} — {p.pseudo}
                       </span>
                       <span className="font-bold">
                         {solde.toFixed(2)} $
                         {eligible && (
-                          <span className="ml-2 text-xs text-green-300">
+                          <span className="ml-2 text-xs text-emerald-600">
                             ✅ Peut retirer
                           </span>
                         )}
                         {proche && (
-                          <span className="ml-2 text-xs text-yellow-300">
+                          <span className="ml-2 text-xs text-amber-600">
                             🟠 Proche (10 $)
                           </span>
                         )}
                       </span>
                     </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
                       <div
                         className={`h-full ${
-                          eligible ? "bg-green-400" : "bg-indigo-400"
+                          eligible ? "bg-emerald-400" : "bg-violet-400"
                         }`}
                         style={{ width: `${pct}%` }}
                       />
@@ -515,12 +488,12 @@ export default function AdminPage() {
         {tab === "parties" && (
           <div className="flex flex-col gap-2">
             {recentGames.length === 0 ? (
-              <p className="text-slate-400">Aucune partie enregistrée.</p>
+              <p className="text-slate-500">Aucune partie enregistrée.</p>
             ) : (
               recentGames.map((g) => (
                 <div
                   key={g.id}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-4 text-sm"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm shadow-sm"
                 >
                   <span className="font-medium">
                     {pseudoMap[g.user_id] || "Inconnu"}
@@ -544,7 +517,7 @@ export default function AdminPage() {
                     →{" "}
                     <span
                       className={
-                        g.recompense > 0 ? "text-green-400" : "text-slate-300"
+                        g.recompense > 0 ? "text-emerald-600" : "text-slate-400"
                       }
                     >
                       {g.solde_apres !== null
@@ -555,8 +528,8 @@ export default function AdminPage() {
                   <span
                     className={`rounded-full px-3 py-1 text-xs ${
                       g.recompense > 0
-                        ? "bg-green-400/20 text-green-300"
-                        : "bg-red-400/20 text-red-300"
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-red-50 text-red-600"
                     }`}
                   >
                     +{Number(g.recompense).toFixed(2)} $
@@ -567,6 +540,6 @@ export default function AdminPage() {
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }

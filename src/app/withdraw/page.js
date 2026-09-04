@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
+import { Sidebar } from "@/components/Sidebar";
 
 const MIN_WITHDRAWAL = 10;
 
@@ -30,6 +30,7 @@ function mask(value) {
 
 export default function WithdrawPage() {
   const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [solde, setSolde] = useState(0);
   const [activeRequest, setActiveRequest] = useState(null);
@@ -55,9 +56,9 @@ export default function WithdrawPage() {
 
     const { data: profileData } = await supabase
       .from("profiles")
-      .select("solde_virtuel")
+      .select("solde_virtuel, is_admin")
       .eq("id", userData.user.id)
-      .single();
+      .maybeSingle();
 
     const { data: requests } = await supabase
       .from("withdrawal_requests")
@@ -65,6 +66,7 @@ export default function WithdrawPage() {
       .order("created_at", { ascending: false });
 
     setSolde(Number(profileData?.solde_virtuel ?? 0));
+    setIsAdmin(!!profileData?.is_admin);
 
     const pending = (requests || []).find((r) =>
       ["en_attente", "en_cours"].includes(r.status)
@@ -145,93 +147,85 @@ export default function WithdrawPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-900">
         <p>Chargement...</p>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 px-4 py-10 text-white">
-      <div className="mx-auto max-w-lg">
-        <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-3xl font-bold">💳 Retrait</h1>
-          <Link
-            href="/dashboard"
-            className="rounded-lg border border-white/20 px-4 py-2 text-sm hover:bg-white/10"
-          >
-            Retour
-          </Link>
-        </div>
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <Sidebar isAdmin={isAdmin} />
+      <div className="mx-auto max-w-lg p-4 pb-28 pt-24 sm:p-6 sm:pb-28 sm:pt-28 lg:p-8 lg:pb-8 lg:pt-28">
+        <h1 className="mb-8 text-2xl font-extrabold sm:text-3xl">
+          💳 Retrait
+        </h1>
 
         {confirmed && (
-          <div className="animate-question mb-6 rounded-2xl border border-green-400/30 bg-green-400/10 p-6 text-center backdrop-blur">
-            <p className="mb-1 text-lg font-semibold text-green-300">
+          <div className="mb-6 rounded-3xl border border-emerald-200 bg-emerald-50 p-6 text-center">
+            <p className="mb-1 text-lg font-semibold text-emerald-700">
               ✅ Retrait confirmé !
             </p>
-            <p className="text-sm text-slate-200">
+            <p className="text-sm text-emerald-600">
               Vous recevrez votre argent retiré sous peu.
             </p>
           </div>
         )}
 
-        <div className="mb-8 rounded-2xl border border-white/10 bg-white/5 p-6 text-center backdrop-blur">
+        <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm">
           <p className="text-xs uppercase tracking-wide text-slate-400">
             Solde disponible
           </p>
-          <p className="mt-1 text-4xl font-extrabold text-yellow-400">
+          <p className="mt-1 text-4xl font-extrabold text-violet-600">
             {solde.toFixed(2)} $
           </p>
         </div>
 
-        {/* Cas 1 : une demande est déjà en cours */}
         {activeRequest && (
-          <div className="animate-question rounded-2xl border border-white/10 bg-white/5 p-6 text-center backdrop-blur">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm">
             <p className="mb-2 text-lg font-semibold">
               Demande de retrait envoyée.
             </p>
-            <p className="mb-1 text-sm text-slate-400">
+            <p className="mb-1 text-sm text-slate-500">
               Méthode :{" "}
               {METHODS.find((m) => m.id === activeRequest.methode)?.label}
             </p>
-            <p className="mb-3 text-sm text-slate-400">
+            <p className="mb-3 text-sm text-slate-500">
               Montant : {Number(activeRequest.montant).toFixed(2)} $
             </p>
-            <span className="inline-block rounded-full bg-white/10 px-4 py-1 text-sm">
+            <span className="inline-block rounded-full bg-slate-100 px-4 py-1 text-sm">
               {STATUS_LABELS[activeRequest.status].emoji}{" "}
               {STATUS_LABELS[activeRequest.status].label}
             </span>
           </div>
         )}
 
-        {/* Cas 2 : solde insuffisant */}
         {!activeRequest && solde < MIN_WITHDRAWAL && (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center backdrop-blur">
-            <p className="mb-3 font-semibold text-slate-200">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+            <p className="mb-3 font-semibold text-slate-700">
               Solde minimum requis : {MIN_WITHDRAWAL.toFixed(2)} $
             </p>
-            <div className="mb-2 h-3 w-full overflow-hidden rounded-full bg-white/10">
+            <div className="mb-2 h-3 w-full overflow-hidden rounded-full bg-slate-100">
               <div
-                className="h-full bg-indigo-500 transition-all"
+                className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all"
                 style={{
                   width: `${Math.min((solde / MIN_WITHDRAWAL) * 100, 100)}%`,
                 }}
               />
             </div>
-            <p className="mb-3 text-sm text-slate-400">
+            <p className="mb-3 text-sm text-slate-500">
               {solde.toFixed(2)} $ / {MIN_WITHDRAWAL.toFixed(2)} $
             </p>
-            <p className="text-sm text-indigo-300">
+            <p className="text-sm text-violet-600">
               Encore {(MIN_WITHDRAWAL - solde).toFixed(2)} $ pour pouvoir
               demander un retrait.
             </p>
           </div>
         )}
 
-        {/* Cas 3 : éligible, choix de la méthode */}
         {!activeRequest && solde >= MIN_WITHDRAWAL && step === "methods" && (
           <div>
-            <h2 className="mb-4 text-lg font-semibold">
+            <h2 className="mb-4 text-lg font-bold">
               Choisissez votre méthode de retrait
             </h2>
             <div className="grid grid-cols-2 gap-3">
@@ -245,7 +239,7 @@ export default function WithdrawPage() {
                     setConfirmed(false);
                     setStep("form");
                   }}
-                  className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-5 transition hover:scale-[1.02] hover:border-indigo-400 hover:bg-white/10"
+                  className="flex flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-5 shadow-sm transition hover:scale-[1.02] hover:border-violet-300"
                 >
                   <span className="text-2xl">{m.icon}</span>
                   <span className="text-sm font-medium">{m.label}</span>
@@ -255,22 +249,21 @@ export default function WithdrawPage() {
           </div>
         )}
 
-        {/* Cas 3b : formulaire selon la méthode */}
         {!activeRequest && step === "form" && (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <button
               onClick={() => setStep("methods")}
-              className="mb-4 text-sm text-slate-400 hover:text-white"
+              className="mb-4 text-sm text-slate-400 hover:text-slate-700"
             >
               ← Changer de méthode
             </button>
 
-            <h2 className="mb-4 text-lg font-semibold">
+            <h2 className="mb-4 text-lg font-bold">
               {METHODS.find((m) => m.id === selectedMethod)?.label}
             </h2>
 
             <div className="mb-4">
-              <label className="mb-1 block text-sm text-slate-300">
+              <label className="mb-1 block text-sm text-slate-500">
                 Montant à retirer (min. {MIN_WITHDRAWAL.toFixed(2)} $, max.{" "}
                 {solde.toFixed(2)} $)
               </label>
@@ -281,10 +274,10 @@ export default function WithdrawPage() {
                 step="0.01"
                 value={montant}
                 onChange={(e) => setMontant(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-indigo-400"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 outline-none focus:border-violet-400"
               />
               {montant !== "" && !montantIsValid() && (
-                <p className="mt-1 text-xs text-red-400">
+                <p className="mt-1 text-xs text-red-500">
                   Le montant doit être entre {MIN_WITHDRAWAL.toFixed(2)} $ et{" "}
                   {solde.toFixed(2)} $.
                 </p>
@@ -323,7 +316,7 @@ export default function WithdrawPage() {
             {selectedMethod === "mobile_money" && (
               <div className="flex flex-col gap-3">
                 <div>
-                  <label className="mb-1 block text-sm text-slate-300">
+                  <label className="mb-1 block text-sm text-slate-500">
                     Opérateur
                   </label>
                   <select
@@ -331,7 +324,7 @@ export default function WithdrawPage() {
                     onChange={(e) =>
                       handleFieldChange("operateur", e.target.value)
                     }
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-indigo-400"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 outline-none focus:border-violet-400"
                   >
                     <option value="">-- Choisir --</option>
                     <option value="Airtel money">Airtel money</option>
@@ -364,36 +357,35 @@ export default function WithdrawPage() {
             <button
               disabled={!fieldsAreValid()}
               onClick={() => setStep("recap")}
-              className="mt-5 w-full rounded-xl bg-indigo-500 py-3 font-semibold transition hover:scale-[1.02] hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-5 w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3 font-semibold text-white shadow-md transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
             >
               Continuer
             </button>
           </div>
         )}
 
-        {/* Cas 3c : récapitulatif */}
         {!activeRequest && step === "recap" && (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             {error && (
-              <p className="mb-4 rounded-lg bg-red-500/20 px-3 py-2 text-sm text-red-300">
+              <p className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
                 {error}
               </p>
             )}
 
-            <h2 className="mb-4 text-lg font-semibold">Récapitulatif</h2>
+            <h2 className="mb-4 text-lg font-bold">Récapitulatif</h2>
 
             <div className="mb-5 flex flex-col gap-2 text-sm">
               <p>
-                <span className="text-slate-400">Méthode : </span>
+                <span className="text-slate-500">Méthode : </span>
                 {METHODS.find((m) => m.id === selectedMethod)?.label}
               </p>
               <p>
-                <span className="text-slate-400">Montant : </span>
+                <span className="text-slate-500">Montant : </span>
                 {Number(montant).toFixed(2)} $
               </p>
-              <div className="text-slate-400">
+              <div className="text-slate-500">
                 Informations (masquées partiellement) :
-                <ul className="mt-1 ml-4 list-disc text-slate-300">
+                <ul className="mt-1 ml-4 list-disc text-slate-700">
                   {Object.entries(fields).map(([key, value]) => (
                     <li key={key}>{mask(String(value))}</li>
                   ))}
@@ -401,7 +393,7 @@ export default function WithdrawPage() {
               </div>
             </div>
 
-            <p className="mb-4 text-xs text-slate-500">
+            <p className="mb-4 text-xs text-slate-400">
               Rappel : cette version est ultra sécurisée et ne stocke aucune
               information sensible. Les détails de votre méthode de retrait
               sont uniquement utilisés pour traiter votre demande de retrait
@@ -413,14 +405,14 @@ export default function WithdrawPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setStep("form")}
-                className="flex-1 rounded-xl border border-white/20 py-3 font-medium hover:bg-white/10"
+                className="flex-1 rounded-xl border border-slate-200 py-3 font-medium text-slate-600 hover:bg-slate-50"
               >
                 Modifier
               </button>
               <button
                 onClick={handleConfirm}
                 disabled={submitting}
-                className="flex-1 rounded-xl bg-indigo-500 py-3 font-semibold hover:bg-indigo-400 disabled:opacity-50"
+                className="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3 font-semibold text-white shadow-md hover:scale-[1.02] disabled:opacity-50"
               >
                 {submitting ? "Envoi..." : "CONFIRMER LA DEMANDE"}
               </button>
@@ -428,17 +420,16 @@ export default function WithdrawPage() {
           </div>
         )}
 
-        {/* Historique */}
         {history.length > 0 && (
           <div className="mt-10">
-            <h2 className="mb-3 text-lg font-semibold">
+            <h2 className="mb-3 text-lg font-bold">
               Historique des demandes
             </h2>
             <div className="flex flex-col gap-2">
               {history.map((r) => (
                 <div
                   key={r.id}
-                  className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm"
+                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm"
                 >
                   <div>
                     <p className="font-medium">
@@ -453,7 +444,7 @@ export default function WithdrawPage() {
                       })}
                     </p>
                   </div>
-                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs">
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs">
                     {STATUS_LABELS[r.status].emoji}{" "}
                     {STATUS_LABELS[r.status].label}
                   </span>
@@ -463,19 +454,19 @@ export default function WithdrawPage() {
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }
 
 function Field({ label, value, onChange, type = "text" }) {
   return (
     <div>
-      <label className="mb-1 block text-sm text-slate-300">{label}</label>
+      <label className="mb-1 block text-sm text-slate-500">{label}</label>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-indigo-400"
+        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 outline-none focus:border-violet-400"
       />
     </div>
   );

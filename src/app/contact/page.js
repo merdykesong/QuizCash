@@ -4,13 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
+import { Sidebar } from "@/components/Sidebar";
 
 export default function ContactPage() {
   const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState(false);
   const [pseudo, setPseudo] = useState("");
   const [email, setEmail] = useState("");
   const [sujet, setSujet] = useState("");
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
@@ -26,11 +29,13 @@ export default function ContactPage() {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("pseudo")
+        .select("pseudo, is_admin")
         .eq("id", userData.user.id)
-        .single();
+        .maybeSingle();
 
       setPseudo(profileData?.pseudo || "");
+      setIsAdmin(!!profileData?.is_admin);
+      setLoading(false);
     }
     loadUser();
   }, [router]);
@@ -52,9 +57,8 @@ export default function ContactPage() {
         message,
       });
 
-    setSending(false);
-
     if (insertError) {
+      setSending(false);
       setError("Une erreur est survenue, réessaie plus tard.");
       return;
     }
@@ -71,56 +75,61 @@ export default function ContactPage() {
       body: JSON.stringify({ pseudo, email, sujet, message }),
     }).catch((err) => console.error("Notification error:", err));
 
+    setSending(false);
     setSent(true);
   }
 
-  if (sent) {
+  if (loading) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 px-4 text-center text-white">
-        <div className="animate-question flex max-w-sm flex-col items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur">
-          <span className="text-4xl">✅</span>
-          <p className="text-lg font-semibold">
-            Votre message a bien été envoyé.
-          </p>
-          <p className="text-sm text-slate-400">
-            Notre équipe vous répondra prochainement.
-          </p>
-          <Link
-            href="/dashboard"
-            className="mt-2 rounded-lg bg-indigo-500 px-6 py-3 font-medium transition hover:scale-105 hover:bg-indigo-400"
-          >
-            Retour au dashboard
-          </Link>
-        </div>
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-900">
+        <p>Chargement...</p>
       </main>
     );
   }
 
-  return (
-    <main className="min-h-screen bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 px-4 py-10 text-white">
-      <div className="mx-auto max-w-lg">
-        <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-3xl font-bold">📩 Contact</h1>
-          <Link
-            href="/help"
-            className="rounded-lg border border-white/20 px-4 py-2 text-sm hover:bg-white/10"
-          >
-            Retour à l'aide
-          </Link>
+  if (sent) {
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-900">
+        <Sidebar isAdmin={isAdmin} />
+        <div className="mx-auto flex max-w-lg flex-col items-center justify-center p-4 pb-28 pt-24 text-center sm:pt-28 lg:pt-32">
+          <div className="w-full rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+            <span className="text-4xl">✅</span>
+            <p className="mt-3 text-lg font-semibold">
+              Votre message a bien été envoyé.
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Notre équipe vous répondra prochainement.
+            </p>
+            <Link
+              href="/dashboard"
+              className="mt-6 inline-block rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3 font-medium text-white shadow-md transition hover:scale-105"
+            >
+              Retour au dashboard
+            </Link>
+          </div>
         </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <Sidebar isAdmin={isAdmin} />
+      <div className="mx-auto max-w-lg p-4 pb-28 pt-24 sm:p-6 sm:pb-28 sm:pt-28 lg:p-8 lg:pb-8 lg:pt-28">
+        <h1 className="mb-8 text-2xl font-extrabold sm:text-3xl">📩 Contact</h1>
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur"
+          className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
         >
           {error && (
-            <p className="mb-4 rounded-lg bg-red-500/20 px-3 py-2 text-sm text-red-300">
+            <p className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
               {error}
             </p>
           )}
 
           <div className="mb-4">
-            <label className="mb-1 block text-sm text-slate-300">
+            <label className="mb-1 block text-sm text-slate-500">
               Nom / pseudo
             </label>
             <input
@@ -128,35 +137,35 @@ export default function ContactPage() {
               required
               value={pseudo}
               onChange={(e) => setPseudo(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-indigo-400"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 outline-none focus:border-violet-400"
             />
           </div>
 
           <div className="mb-4">
-            <label className="mb-1 block text-sm text-slate-300">Email</label>
+            <label className="mb-1 block text-sm text-slate-500">Email</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-indigo-400"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 outline-none focus:border-violet-400"
             />
           </div>
 
           <div className="mb-4">
-            <label className="mb-1 block text-sm text-slate-300">Sujet</label>
+            <label className="mb-1 block text-sm text-slate-500">Sujet</label>
             <input
               type="text"
               required
               value={sujet}
               onChange={(e) => setSujet(e.target.value)}
               placeholder="Ex : Problème avec mon retrait"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-indigo-400"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 outline-none focus:border-violet-400"
             />
           </div>
 
           <div className="mb-6">
-            <label className="mb-1 block text-sm text-slate-300">
+            <label className="mb-1 block text-sm text-slate-500">
               Message
             </label>
             <textarea
@@ -164,19 +173,19 @@ export default function ContactPage() {
               rows={5}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="w-full resize-none rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-indigo-400"
+              className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 outline-none focus:border-violet-400"
             />
           </div>
 
           <button
             type="submit"
             disabled={sending}
-            className="w-full rounded-xl bg-indigo-500 py-3 font-semibold transition hover:scale-[1.02] hover:bg-indigo-400 disabled:opacity-50"
+            className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3 font-semibold text-white shadow-md transition hover:scale-[1.02] disabled:opacity-50"
           >
             {sending ? "Envoi..." : "ENVOYER LE MESSAGE"}
           </button>
         </form>
       </div>
-    </main>
+    </div>
   );
 }
