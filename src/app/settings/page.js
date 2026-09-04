@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
+import { Sidebar } from "@/components/Sidebar";
 
-const EMOJIS = ["😀","😎","🤖","🦁","🇫🇷","😁","🐺","🇨🇩","🪩","🥇","👽","🎮","🏆","🔥","⚡","🌟","💎","🎯","🚀","🧠","🍀","🐉","🦅","🔞"];
+const EMOJIS = ["😀","😎","🤖","🦁","🐯","🦊","🐺","🐸","🐵","🦄","👽","🎮","🏆","🔥","⚡","🌟","💎","🎯","🚀","🧠","🍀","🐉","🦅","🐍"];
 
 export default function SettingsPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
   const [pseudo, setPseudo] = useState("");
   const [avatarEmoji, setAvatarEmoji] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -32,12 +33,13 @@ export default function SettingsPage() {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("pseudo, avatar_emoji")
+        .select("pseudo, avatar_emoji, is_admin")
         .eq("id", userData.user.id)
-        .single();
+        .maybeSingle();
 
       setPseudo(profileData?.pseudo || "");
       setAvatarEmoji(profileData?.avatar_emoji || "");
+      setIsAdmin(!!profileData?.is_admin);
       setLoading(false);
     }
     load();
@@ -109,39 +111,34 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-900">
         <p>Chargement...</p>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 px-4 py-10 text-white">
-      <div className="mx-auto max-w-lg">
-        <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-3xl font-bold">⚙️ Paramètres</h1>
-          <Link
-            href="/dashboard"
-            className="rounded-lg border border-white/20 px-4 py-2 text-sm hover:bg-white/10"
-          >
-            Retour
-          </Link>
-        </div>
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <Sidebar isAdmin={isAdmin} />
+      <div className="mx-auto max-w-lg p-4 pb-28 pt-24 sm:p-6 sm:pb-28 sm:pt-28 lg:p-8 lg:pb-8 lg:pt-28">
+        <h1 className="mb-8 text-2xl font-extrabold sm:text-3xl">
+          ⚙️ Paramètres
+        </h1>
 
         {message && (
-          <p className="mb-6 rounded-lg bg-white/10 px-4 py-2 text-sm">
+          <p className="mb-6 rounded-xl bg-violet-50 px-4 py-2 text-sm text-violet-700">
             {message}
           </p>
         )}
 
         {/* Choisir un avatar */}
-        <div className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-6">
-          <h2 className="mb-4 text-lg font-semibold">Choisir un avatar</h2>
+        <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-lg font-bold">Choisir un avatar</h2>
           <div className="mb-4 flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-500 text-3xl">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 text-3xl">
               {avatarEmoji || "?"}
             </div>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-slate-500">
               Choisis un emoji ci-dessous pour l'utiliser comme avatar.
             </p>
           </div>
@@ -150,10 +147,10 @@ export default function SettingsPage() {
               <button
                 key={emoji}
                 onClick={() => handleSelectAvatar(emoji)}
-                className={`flex h-11 w-11 items-center justify-center rounded-lg text-xl transition hover:scale-110 ${
+                className={`flex h-11 w-11 items-center justify-center rounded-xl text-xl transition hover:scale-110 ${
                   avatarEmoji === emoji
-                    ? "border-2 border-indigo-400 bg-indigo-500/20"
-                    : "border border-white/10 bg-white/5"
+                    ? "border-2 border-violet-400 bg-violet-50"
+                    : "border border-slate-200 bg-slate-50"
                 }`}
               >
                 {emoji}
@@ -165,21 +162,21 @@ export default function SettingsPage() {
         {/* Modifier le pseudo */}
         <form
           onSubmit={handleUpdatePseudo}
-          className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-6"
+          className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
         >
-          <h2 className="mb-4 text-lg font-semibold">Modifier mon profil</h2>
-          <label className="mb-1 block text-sm text-slate-300">Pseudo</label>
+          <h2 className="mb-4 text-lg font-bold">Modifier mon profil</h2>
+          <label className="mb-1 block text-sm text-slate-500">Pseudo</label>
           <input
             type="text"
             required
             value={pseudo}
             onChange={(e) => setPseudo(e.target.value)}
-            className="mb-4 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-indigo-400"
+            className="mb-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 outline-none focus:border-violet-400"
           />
           <button
             type="submit"
             disabled={savingPseudo}
-            className="rounded-lg bg-indigo-500 px-5 py-2 font-medium hover:bg-indigo-400 disabled:opacity-50"
+            className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2 font-medium text-white shadow-sm transition hover:scale-[1.02] disabled:opacity-50"
           >
             {savingPseudo ? "Enregistrement..." : "Enregistrer"}
           </button>
@@ -188,11 +185,11 @@ export default function SettingsPage() {
         {/* Changer le mot de passe */}
         <form
           onSubmit={handleUpdatePassword}
-          className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-6"
+          className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
         >
-          <h2 className="mb-4 text-lg font-semibold">Paramètres du compte</h2>
+          <h2 className="mb-4 text-lg font-bold">Paramètres du compte</h2>
 
-          <label className="mb-1 block text-sm text-slate-300">
+          <label className="mb-1 block text-sm text-slate-500">
             Mot de passe actuel
           </label>
           <input
@@ -200,10 +197,10 @@ export default function SettingsPage() {
             required
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
-            className="mb-4 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-indigo-400"
+            className="mb-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 outline-none focus:border-violet-400"
           />
 
-          <label className="mb-1 block text-sm text-slate-300">
+          <label className="mb-1 block text-sm text-slate-500">
             Nouveau mot de passe
           </label>
           <input
@@ -211,10 +208,10 @@ export default function SettingsPage() {
             required
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            className="mb-4 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-indigo-400"
+            className="mb-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 outline-none focus:border-violet-400"
           />
 
-          <label className="mb-1 block text-sm text-slate-300">
+          <label className="mb-1 block text-sm text-slate-500">
             Confirmer le nouveau mot de passe
           </label>
           <input
@@ -222,13 +219,13 @@ export default function SettingsPage() {
             required
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="mb-4 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none focus:border-indigo-400"
+            className="mb-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 outline-none focus:border-violet-400"
           />
 
           <button
             type="submit"
             disabled={savingPassword}
-            className="rounded-lg bg-indigo-500 px-5 py-2 font-medium hover:bg-indigo-400 disabled:opacity-50"
+            className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2 font-medium text-white shadow-sm transition hover:scale-[1.02] disabled:opacity-50"
           >
             {savingPassword ? "Enregistrement..." : "Changer le mot de passe"}
           </button>
@@ -236,11 +233,11 @@ export default function SettingsPage() {
 
         <button
           onClick={handleLogout}
-          className="w-full rounded-xl border border-white/20 py-3 font-semibold text-slate-200 transition hover:bg-white/10"
+          className="w-full rounded-2xl border border-slate-200 bg-white py-3 font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
         >
           Déconnexion
         </button>
       </div>
-    </main>
+    </div>
   );
 }

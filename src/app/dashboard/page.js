@@ -20,9 +20,7 @@ function timeAgo(dateString) {
   for (const [name, secs] of units) {
     const value = Math.floor(seconds / secs);
     if (value >= 1) {
-      return `il y a ${value} ${name}${
-        value > 1 && name !== "mois" ? "s" : ""
-      }`;
+      return `il y a ${value} ${name}${value > 1 && name !== "mois" ? "s" : ""}`;
     }
   }
   return "à l'instant";
@@ -32,40 +30,41 @@ export default function DashboardPage() {
   const router = useRouter();
   const [profile, setProfile] = useState(null);
   const [parties, setParties] = useState([]);
+  const [classement, setClassement] = useState([]);
+  const [monRang, setMonRang] = useState(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [monClassement, setMonClassement] = useState(null);
 
   useEffect(() => {
     async function loadData() {
       const { data: userData } = await supabase.auth.getUser();
-
       if (!userData.user) {
         router.push("/login");
         return;
       }
 
-      const { data: profileData, error: profileError } = await supabase
+      const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", userData.user.id)
         .maybeSingle();
 
-      if (profileError) {
-        console.error("Erreur chargement profil:", profileError);
-      }
-
       const { data: partiesData } = await supabase
         .from("parties")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(5);
+        .limit(4);
+
+      const { data: classementData } = await supabase.rpc(
+        "obtenir_classement"
+      );
 
       const { data: rangData } = await supabase.rpc("obtenir_mon_classement");
 
       setProfile(profileData);
       setParties(partiesData || []);
-      setMonClassement(rangData);
+      setClassement((classementData || []).slice(0, 5));
+      setMonRang(rangData);
       setLoading(false);
     }
 
@@ -79,201 +78,300 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-black text-neutral-100">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-900">
         <p>Chargement...</p>
       </main>
     );
   }
 
-  const quickAccess = [
-    { href: "/rewards", icon: "🎁", label: "Rewards" },
-    { href: "/leaderboard", icon: "🏆", label: "Leaderboard" },
-    { href: "/history", icon: "🕘", label: "History" },
-    { href: "/settings", icon: "⚙️", label: "Settings" },
-    profile?.is_admin
-      ? { href: "/admin", icon: "🛠️", label: "Admin" }
-      : { href: "/profile", icon: "👤", label: "Profil" },
-    { href: "/help", icon: "❓", label: "Help" },
-  ];
+  const pct = profile?.meilleur_score
+    ? Math.round((profile.meilleur_score / 30) * 100)
+    : 0;
+
+  const medals = ["🥇", "🥈", "🥉"];
 
   return (
-    <div className="flex min-h-screen flex-col bg-black text-neutral-100 lg:flex-row">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
       <Sidebar isAdmin={profile?.is_admin} />
 
-      <div className="flex flex-1 flex-col gap-6 p-4 lg:flex-row lg:gap-6 lg:p-8">
+      <div className="mx-auto flex w-full max-w-screen-2xl flex-1 flex-col gap-6 p-4 pb-28 pt-24 sm:p-6 sm:pb-28 sm:pt-28 lg:flex-row lg:gap-6 lg:p-8 lg:pb-8 lg:pt-28">
         {/* Colonne centrale */}
         <main className="flex flex-1 flex-col gap-6">
-          <div>
-            <h1 className="text-2xl font-bold md:text-3xl">
-              Bienvenue, {profile?.pseudo} 👋
-            </h1>
-            <p className="text-neutral-400">Voici ton tableau de bord.</p>
+          {/* Header */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-extrabold sm:text-3xl">
+                Bienvenue, {profile?.pseudo} 👋
+              </h1>
+              <p className="text-slate-500">Prêt à tester vos connaissances ?</p>
+            </div>
+            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
+              📅 Semaine <span className="text-slate-400">▾</span>
+            </div>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="rounded-xl border border-[#e8c75a]/40 bg-black p-5 text-center">
-              <p className="text-xs uppercase tracking-wide text-[#e8c75a]/80">
-                Solde Actuel
-              </p>
-              <p className="mt-1 text-2xl font-bold text-[#e8c75a]">
-                {Number(profile?.solde_virtuel ?? 0).toFixed(2)} $
-              </p>
-            </div>
-            <div className="rounded-xl border border-[#e8c75a]/40 bg-black p-5 text-center">
-              <p className="text-xs uppercase tracking-wide text-[#e8c75a]/80">
-                High Score
-              </p>
-              <p className="mt-1 text-2xl font-bold text-cyan-300">
-                {profile?.meilleur_score ?? 0} / 30
-              </p>
-            </div>
-            <div className="rounded-xl border border-[#e8c75a]/40 bg-black p-5 text-center">
-              <p className="text-xs uppercase tracking-wide text-[#e8c75a]/80">
-                Games Played
-              </p>
-              <p className="mt-1 text-2xl font-bold text-cyan-300">
-                {profile?.parties_jouees ?? 0}
-              </p>
-            </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              icon="💰"
+              iconBg="bg-violet-100"
+              label="Solde"
+              value={`${Number(profile?.solde_virtuel ?? 0).toFixed(2)} $`}
+              sub="Cagnotte disponible"
+            />
+            <StatCard
+              icon="📊"
+              iconBg="bg-cyan-100"
+              label="Parties jouées"
+              value={profile?.parties_jouees ?? 0}
+              sub="au total"
+            />
+            <StatCard
+              icon="🏅"
+              iconBg="bg-emerald-100"
+              label="Meilleur score"
+              value={`${profile?.meilleur_score ?? 0} / 30`}
+              sub={`${pct}% de réussite`}
+            />
+            <StatCard
+              icon="⭐"
+              iconBg="bg-amber-100"
+              label="Ton classement"
+              value={monRang ? `#${monRang}` : "—"}
+              sub="classement global"
+            />
           </div>
 
-          {/* Classement personnel + encouragement */}
-          <div className="rounded-2xl border border-[#e8c75a]/30 bg-gradient-to-r from-[#382a5c]/40 to-[#523e85]/20 p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Bannière Jouer */}
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-500 p-6 sm:p-8">
+            <div className="relative z-10 flex flex-col items-start gap-4 sm:max-w-md">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-xl">
+                ⚡
+              </span>
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-400">
-                  Ta position
-                </p>
-                <p className="text-2xl font-bold text-[#e8c75a]">
-                  {monClassement ? `#${monClassement}` : "—"}
+                <h2 className="text-2xl font-extrabold text-white sm:text-3xl">
+                  Prêt pour un nouveau défi ?
+                </h2>
+                <p className="mt-2 text-sm text-violet-100">
+                  Des milliers de questions, des sujets passionnants et des
+                  classements compétitifs.
                 </p>
               </div>
-              <p className="max-w-xs text-sm text-slate-200">
-                🏆 Termine <strong>1er du classement</strong> cette semaine et
-                gagne un bonus de <strong className="text-[#e8c75a]">+2,50 $</strong>{" "}
-                pendant les  jours suivants !
-              </p>
+              <Link
+                href="/quiz"
+                className="mt-2 flex items-center gap-2 rounded-xl bg-white px-6 py-3 font-semibold text-violet-700 shadow-lg transition hover:scale-[1.03]"
+              >
+                Commencer un quiz
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-600 text-xs text-white">
+                  →
+                </span>
+              </Link>
+            </div>
+
+            {/* Illustration décorative CSS */}
+            <div className="pointer-events-none absolute -right-6 bottom-0 top-0 hidden w-64 items-center justify-center sm:flex">
+              <div className="relative h-40 w-40 rotate-6 rounded-3xl bg-white/90 shadow-2xl">
+                <div className="absolute -bottom-4 left-1/2 h-6 w-32 -translate-x-1/2 rounded-full bg-black/10 blur-md" />
+                <div className="flex h-full w-full items-center justify-center text-6xl">
+                  ⚡
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Play Now */}
-          <Link
-            href="/quiz"
-            className="group flex items-center justify-between rounded-xl border border-white/10 bg-gradient-to-b from-[#382a5c] to-[#523e85] p-8 transition hover:scale-[1.01]"
-          >
-            <span className="text-3xl font-extrabold text-white md:text-4xl">
-              Play Now
-            </span>
-            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/20 text-3xl text-white shadow-lg shadow-black/40 transition group-hover:scale-110">
-              ▶
-            </span>
-          </Link>
+          {/* Activité récente + Progression */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="font-bold">Activité récente</h3>
+                <Link
+                  href="/history"
+                  className="text-sm font-medium text-violet-600 hover:underline"
+                >
+                  Voir tout
+                </Link>
+              </div>
+              {parties.length === 0 ? (
+                <p className="text-sm text-slate-400">
+                  Aucune activité récente. Joue ta première partie !
+                </p>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  {parties.map((p) => (
+                    <div key={p.id} className="flex items-center gap-3">
+                      <span
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm ${
+                          p.recompense > 0
+                            ? "bg-emerald-100 text-emerald-600"
+                            : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {p.recompense > 0 ? "✓" : "✕"}
+                      </span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">
+                          Quiz terminé : {p.score}/30
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {timeAgo(p.created_at)}
+                        </p>
+                      </div>
+                      <span
+                        className={`text-sm font-bold ${
+                          p.recompense > 0 ? "text-emerald-600" : "text-slate-400"
+                        }`}
+                      >
+                        +{Number(p.recompense).toFixed(2)} $
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          {/* Grille d'accès rapide */}
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            {quickAccess.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-[#1a1a1a] p-5 text-center transition hover:scale-[1.03] hover:border-white/20"
-              >
-                <span className="text-3xl">{item.icon}</span>
-                <span className="text-sm font-medium text-neutral-100">
-                  {item.label}
-                </span>
-              </Link>
-            ))}
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h3 className="mb-4 font-bold">Votre progression</h3>
+              <div className="flex flex-col items-center gap-3 py-2 text-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-slate-100 text-2xl">
+                  🔒
+                </div>
+                <p className="text-sm text-slate-500">
+                  Le suivi de série de jours (streak) arrive bientôt !
+                </p>
+              </div>
+            </div>
           </div>
         </main>
 
         {/* Colonne droite */}
         <aside className="flex w-full flex-col gap-6 lg:w-80">
-          {/* User Profile */}
-          <div className="relative rounded-xl border border-white/10 bg-[#1a1a1a] p-6 text-center">
+          {/* Profil */}
+          <div className="relative rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm">
             <button
               onClick={() => setMenuOpen((o) => !o)}
-              className="absolute right-4 top-4 text-neutral-400 hover:text-white"
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-700"
             >
               ⋮
             </button>
             {menuOpen && (
-              <div className="absolute right-4 top-10 z-10 flex flex-col overflow-hidden rounded-lg border border-white/10 bg-[#141414] text-sm shadow-xl">
-                <Link
-                  href="/profile"
-                  className="px-4 py-2 text-left hover:bg-white/5"
-                >
+              <div className="absolute right-4 top-10 z-10 flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white text-sm shadow-lg">
+                <Link href="/profile" className="px-4 py-2 text-left hover:bg-slate-50">
                   Mon profil
                 </Link>
-                <Link
-                  href="/settings"
-                  className="px-4 py-2 text-left hover:bg-white/5"
-                >
+                <Link href="/settings" className="px-4 py-2 text-left hover:bg-slate-50">
                   Paramètres
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="px-4 py-2 text-left text-red-400 hover:bg-white/5"
+                  className="px-4 py-2 text-left text-red-500 hover:bg-slate-50"
                 >
                   Déconnexion
                 </button>
               </div>
             )}
 
-            <p className="mb-3 text-xs uppercase tracking-wide text-neutral-400">
-              User Profile
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Mon Profil
             </p>
-            <div className="relative mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-blue-500 text-3xl font-bold text-white">
-              {profile?.avatar_emoji || profile?.pseudo?.[0]?.toUpperCase()}
-              <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-[#1a1a1a] bg-green-400" />
-            </div>
-            <p className="font-semibold">{profile?.pseudo}</p>
-            {profile?.champion_jusqua &&
-              new Date(profile.champion_jusqua) > new Date() && (
-                <p className="mt-1 text-xs font-semibold text-yellow-400">
-                  🏆 Champion de la semaine !
-                </p>
+            <div className="relative mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 text-3xl">
+              {profile?.avatar_emoji || (
+                <span className="font-bold text-white">
+                  {profile?.pseudo?.[0]?.toUpperCase()}
+                </span>
               )}
+              <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-white bg-emerald-400" />
+            </div>
+            <p className="font-bold">{profile?.pseudo}</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Niveau : bientôt disponible
+            </p>
           </div>
 
-          {/* Activity Feed */}
-          <div className="rounded-xl border border-white/10 bg-[#1a1a1a] p-6">
-            <p className="mb-4 text-xs uppercase tracking-wide text-neutral-400">
-              Activity Feed
-            </p>
-            {parties.length === 0 ? (
-              <p className="text-sm text-neutral-400">
-                Aucune activité récente. Joue ta première partie !
-              </p>
-            ) : (
-              <div className="relative flex flex-col gap-4 border-l border-white/10 pl-4">
-                {parties.map((p) => (
-                  <div key={p.id} className="relative">
-                    <span className="absolute -left-[21px] top-1 h-2 w-2 rounded-full bg-cyan-400" />
-                    <p className="text-sm">
-                      Partie terminée : {p.score}/30 —{" "}
-                      <span className="text-[#e8c75a]">
-                        +{Number(p.recompense).toFixed(2)} $
-                      </span>
-                    </p>
-                    <p className="text-xs text-neutral-500">
-                      {timeAgo(p.created_at)}
-                    </p>
+          {/* Classement */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="font-bold">Classement</h3>
+              <Link
+                href="/leaderboard"
+                className="text-sm font-medium text-violet-600 hover:underline"
+              >
+                Voir tout
+              </Link>
+            </div>
+            <div className="flex flex-col gap-3">
+              {classement.map((p, index) => (
+                <div
+                  key={index}
+                  className={`flex items-center justify-between rounded-xl px-2 py-1.5 ${
+                    p.est_moi ? "bg-violet-50" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-6 text-center">
+                      {medals[index] || index + 1}
+                    </span>
+                    <span
+                      className={`text-sm font-medium ${
+                        p.est_moi ? "text-violet-700" : "text-slate-700"
+                      }`}
+                    >
+                      {p.pseudo}
+                    </span>
                   </div>
-                ))}
-              </div>
-            )}
+                  <span className="text-sm font-bold text-slate-600">
+                    {p.meilleur_score}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Aide */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 className="font-bold">Besoin d'aide ?</h3>
+            <p className="mb-4 text-sm text-slate-500">
+              Nous sommes là pour vous aider
+            </p>
+            <Link
+              href="/contact"
+              className="mb-3 flex items-center justify-between rounded-xl bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-100"
+            >
+              🎧 Contacter le support <span>→</span>
+            </Link>
+            <div className="grid grid-cols-2 gap-2">
+              <Link
+                href="/help"
+                className="rounded-xl border border-slate-200 px-3 py-2.5 text-center text-xs font-medium text-slate-600 hover:bg-slate-50"
+              >
+                ❔ FAQ
+              </Link>
+              <Link
+                href="/help"
+                className="rounded-xl border border-slate-200 px-3 py-2.5 text-center text-xs font-medium text-slate-600 hover:bg-slate-50"
+              >
+                ❔ Aide
+              </Link>
+            </div>
           </div>
         </aside>
       </div>
+    </div>
+  );
+}
 
-      {/* Support Chat flottant */}
-      <Link
-        href="/contact"
-        className="fixed bottom-6 right-6 flex items-center gap-2 rounded-full bg-[#523e85] px-5 py-3 text-sm font-semibold text-[#e8c75a] shadow-lg shadow-black/40 transition hover:scale-105 hover:bg-[#604793]"
-      >
-        🧠 Support Chat
-      </Link>
+function StatCard({ icon, iconBg, label, value, sub }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5">
+      <div className="mb-3 flex items-center gap-2">
+        <span
+          className={`flex h-9 w-9 items-center justify-center rounded-xl text-lg ${iconBg}`}
+        >
+          {icon}
+        </span>
+        <span className="text-xs font-medium text-slate-500">{label}</span>
+      </div>
+      <p className="text-xl font-extrabold sm:text-2xl">{value}</p>
+      <p className="mt-1 text-xs text-slate-400">{sub}</p>
     </div>
   );
 }
