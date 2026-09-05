@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -177,7 +178,11 @@ export function Sidebar({ isAdmin }) {
   const glass =
     "border border-white/70 bg-white/60 shadow-[0_8px_30px_rgba(15,23,42,0.12)] backdrop-blur-2xl backdrop-saturate-[1.8] supports-[backdrop-filter]:bg-white/55";
 
-  return (
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
+  return createPortal(
     <>
       {/* Desktop : barre flottante, complètement indépendante du contenu */}
       <nav
@@ -280,6 +285,7 @@ export function Sidebar({ isAdmin }) {
           </button>
         </div>
       )}
-    </>
+    </>,
+    document.body
   );
 }
