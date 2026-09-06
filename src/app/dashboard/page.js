@@ -32,6 +32,8 @@ export default function DashboardPage() {
   const [parties, setParties] = useState([]);
   const [classement, setClassement] = useState([]);
   const [monRang, setMonRang] = useState(null);
+  const [progression, setProgression] = useState(null);
+  const [joursActifs, setJoursActifs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -61,10 +63,25 @@ export default function DashboardPage() {
 
       const { data: rangData } = await supabase.rpc("obtenir_mon_classement");
 
+      const { data: progressionData } = await supabase
+        .rpc("obtenir_progression")
+        .single();
+
+      const { data: joursData } = await supabase.rpc(
+        "obtenir_jours_actifs_semaine"
+      );
+
+      const jours = (joursData || []).map((d) => {
+        const day = new Date(d + "T00:00:00Z").getUTCDay();
+        return (day + 6) % 7;
+      });
+
       setProfile(profileData);
       setParties(partiesData || []);
       setClassement((classementData || []).slice(0, 5));
       setMonRang(rangData);
+      setProgression(progressionData);
+      setJoursActifs(jours);
       setLoading(false);
     }
 
@@ -231,13 +248,35 @@ export default function DashboardPage() {
 
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <h3 className="mb-4 font-bold">Votre progression</h3>
-              <div className="flex flex-col items-center gap-3 py-2 text-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-slate-100 text-2xl">
-                  🔒
+              <div className="flex flex-col items-center gap-2 py-2 text-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-violet-200 bg-violet-50">
+                  <div>
+                    <p className="text-2xl font-extrabold leading-none text-violet-700">
+                      {progression?.streak ?? 0}
+                    </p>
+                    <p className="text-[10px] text-slate-400">jours</p>
+                  </div>
                 </div>
-                <p className="text-sm text-slate-500">
-                  Le suivi de série de jours (streak) arrive bientôt !
+                <p className="text-sm font-medium text-slate-600">
+                  Quiz Streak
                 </p>
+              </div>
+              <div className="mt-4 flex justify-between px-2">
+                {["L", "M", "M", "J", "V", "S", "D"].map((label, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-col items-center gap-1"
+                  >
+                    <span className="text-xs text-slate-400">{label}</span>
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        joursActifs.includes(index)
+                          ? "bg-violet-500"
+                          : "border border-slate-200"
+                      }`}
+                    />
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -282,9 +321,28 @@ export default function DashboardPage() {
               <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-white bg-emerald-400" />
             </div>
             <p className="font-bold">{profile?.pseudo}</p>
-            <p className="mt-1 text-xs text-slate-400">
-              Niveau : bientôt disponible
-            </p>
+            {progression && (
+              <>
+                <p className="mt-1 text-xs font-semibold text-violet-600">
+                  Niveau {progression.niveau}
+                </p>
+                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full bg-gradient-to-r from-violet-500 to-cyan-400"
+                    style={{
+                      width: `${
+                        (progression.xp_niveau_actuel /
+                          progression.xp_niveau_suivant) *
+                        100
+                      }%`,
+                    }}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-slate-400">
+                  {progression.xp_niveau_actuel} / {progression.xp_niveau_suivant} XP
+                </p>
+              </>
+            )}
           </div>
 
           {/* Classement */}

@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { Sidebar } from "@/components/Sidebar";
 
 const MIN_WITHDRAWAL = 10;
+const MIN_FILLEULS = 5;
 
 const STATUS_LABELS = {
   en_attente: { emoji: "🟡", label: "En attente" },
@@ -42,6 +43,9 @@ export default function WithdrawPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [confirmed, setConfirmed] = useState(false);
+  const [filleuls, setFilleuls] = useState(0);
+  const [referralLink, setReferralLink] = useState("");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -65,8 +69,16 @@ export default function WithdrawPage() {
       .select("*")
       .order("created_at", { ascending: false });
 
+    const { data: filleulsCount } = await supabase.rpc(
+      "obtenir_nombre_filleuls"
+    );
+
     setSolde(Number(profileData?.solde_virtuel ?? 0));
     setIsAdmin(!!profileData?.is_admin);
+    setFilleuls(filleulsCount ?? 0);
+    setReferralLink(
+      `${window.location.origin}/signup?ref=${userData.user.id}`
+    );
 
     const pending = (requests || []).find((r) =>
       ["en_attente", "en_cours"].includes(r.status)
@@ -102,6 +114,12 @@ export default function WithdrawPage() {
       return !!fields.description;
     }
     return false;
+  }
+
+  async function handleCopyLink() {
+    await navigator.clipboard.writeText(referralLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }
 
   async function handleConfirm() {
@@ -153,6 +171,8 @@ export default function WithdrawPage() {
     );
   }
 
+  const filleulsOk = filleuls >= MIN_FILLEULS;
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <Sidebar isAdmin={isAdmin} />
@@ -181,6 +201,44 @@ export default function WithdrawPage() {
           </p>
         </div>
 
+        {/* Palier parrainage — bloque tant que non atteint */}
+        {!activeRequest && !filleulsOk && (
+          <div className="rounded-3xl border border-violet-200 bg-violet-50 p-6 text-center">
+            <p className="mb-2 font-semibold text-violet-800">
+              🎁 Invite 5 amis pour débloquer les retraits
+            </p>
+            <div className="mb-2 h-3 w-full overflow-hidden rounded-full bg-white">
+              <div
+                className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all"
+                style={{
+                  width: `${Math.min((filleuls / MIN_FILLEULS) * 100, 100)}%`,
+                }}
+              />
+            </div>
+            <p className="mb-4 text-sm text-violet-700">
+              {filleuls} / {MIN_FILLEULS} amis inscrits via ton lien
+            </p>
+
+            <p className="mb-2 text-xs text-slate-500">
+              Partage ton lien personnel :
+            </p>
+            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+              <input
+                type="text"
+                readOnly
+                value={referralLink}
+                className="flex-1 truncate bg-transparent text-xs text-slate-600 outline-none"
+              />
+              <button
+                onClick={handleCopyLink}
+                className="shrink-0 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-500"
+              >
+                {copied ? "Copié !" : "Copier"}
+              </button>
+            </div>
+          </div>
+        )}
+
         {activeRequest && (
           <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm">
             <p className="mb-2 text-lg font-semibold">
@@ -200,7 +258,7 @@ export default function WithdrawPage() {
           </div>
         )}
 
-        {!activeRequest && solde < MIN_WITHDRAWAL && (
+        {!activeRequest && filleulsOk && solde < MIN_WITHDRAWAL && (
           <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm">
             <p className="mb-3 font-semibold text-slate-700">
               Solde minimum requis : {MIN_WITHDRAWAL.toFixed(2)} $
@@ -223,31 +281,34 @@ export default function WithdrawPage() {
           </div>
         )}
 
-        {!activeRequest && solde >= MIN_WITHDRAWAL && step === "methods" && (
-          <div>
-            <h2 className="mb-4 text-lg font-bold">
-              Choisissez votre méthode de retrait
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
-              {METHODS.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => {
-                    setSelectedMethod(m.id);
-                    setFields({});
-                    setMontant("");
-                    setConfirmed(false);
-                    setStep("form");
-                  }}
-                  className="flex flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-5 shadow-sm transition hover:scale-[1.02] hover:border-violet-300"
-                >
-                  <span className="text-2xl">{m.icon}</span>
-                  <span className="text-sm font-medium">{m.label}</span>
-                </button>
-              ))}
+        {!activeRequest &&
+          filleulsOk &&
+          solde >= MIN_WITHDRAWAL &&
+          step === "methods" && (
+            <div>
+              <h2 className="mb-4 text-lg font-bold">
+                Choisissez votre méthode de retrait
+              </h2>
+              <div className="grid grid-cols-2 gap-3">
+                {METHODS.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => {
+                      setSelectedMethod(m.id);
+                      setFields({});
+                      setMontant("");
+                      setConfirmed(false);
+                      setStep("form");
+                    }}
+                    className="flex flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-5 shadow-sm transition hover:scale-[1.02] hover:border-violet-300"
+                  >
+                    <span className="text-2xl">{m.icon}</span>
+                    <span className="text-sm font-medium">{m.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {!activeRequest && step === "form" && (
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
