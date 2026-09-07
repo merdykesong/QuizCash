@@ -201,8 +201,8 @@ export default function WithdrawPage() {
           </p>
         </div>
 
-        {/* Palier parrainage — bloque tant que non atteint */}
-        {!activeRequest && !filleulsOk && (
+        {/* Palier parrainage — apparaît seulement une fois le solde minimum atteint */}
+        {!activeRequest && solde >= MIN_WITHDRAWAL && !filleulsOk && (
           <div className="rounded-3xl border border-violet-200 bg-violet-50 p-6 text-center">
             <p className="mb-2 font-semibold text-violet-800">
               🎁 Invite 5 amis pour débloquer les retraits
@@ -258,7 +258,7 @@ export default function WithdrawPage() {
           </div>
         )}
 
-        {!activeRequest && filleulsOk && solde < MIN_WITHDRAWAL && (
+        {!activeRequest && solde < MIN_WITHDRAWAL && (
           <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm">
             <p className="mb-3 font-semibold text-slate-700">
               Solde minimum requis : {MIN_WITHDRAWAL.toFixed(2)} $
