@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const parrainId = searchParams.get("ref");
@@ -144,5 +144,19 @@ async function handleGoogleLogin() {
         </p>
       </form>
     </main>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 text-white">
+          <p>Chargement...</p>
+        </main>
+      }
+    >
+      <SignupForm />
+    </Suspense>
   );
 }
