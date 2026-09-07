@@ -46,6 +46,7 @@ export default function QuizPage() {
   const [result, setResult] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [shuffledChoices, setShuffledChoices] = useState([]);
   const [showQuitModal, setShowQuitModal] = useState(false);
   const [quitting, setQuitting] = useState(false);
   const answeredRef = useRef(false);
@@ -190,7 +191,20 @@ export default function QuizPage() {
     if (loading || finished || questions.length === 0) return;
     answeredRef.current = false;
     setTimeLeft(TIME_PER_QUESTION);
-  }, [currentIndex, loading, finished, questions.length]);
+
+    const current = questions[currentIndex];
+    if (current) {
+      setShuffledChoices(
+        shuffle([
+          { letter: "a", text: current.choix_a },
+          { letter: "b", text: current.choix_b },
+          { letter: "c", text: current.choix_c },
+          { letter: "d", text: current.choix_d },
+          { letter: "e", text: "Aucune bonne réponse" },
+        ])
+      );
+    }
+  }, [currentIndex, loading, finished, questions.length, questions]);
 
   useEffect(() => {
     if (loading || finished || questions.length === 0) return;
@@ -354,12 +368,7 @@ export default function QuizPage() {
   }
 
   const current = questions[currentIndex];
-  const choices = [
-    { letter: "a", text: current.choix_a },
-    { letter: "b", text: current.choix_b },
-    { letter: "c", text: current.choix_c },
-    { letter: "d", text: current.choix_d },
-  ];
+  const choices = shuffledChoices;
 
   const isUrgent = timeLeft <= 5;
 
