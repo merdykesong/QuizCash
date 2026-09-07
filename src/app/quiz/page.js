@@ -319,6 +319,7 @@ export default function QuizPage() {
     const total = questions.length;
     const bonnes = result.bonnes;
     const mauvaises = result.mauvaises;
+    const scorePenalise = result.score;
 
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-3 bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 px-4 text-white">
@@ -327,9 +328,11 @@ export default function QuizPage() {
 
           <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 p-6 text-center backdrop-blur">
             <p className="text-4xl font-extrabold text-indigo-400">
-              {bonnes} / {total}
+              {scorePenalise} / {total}
             </p>
-            <p className="mt-1 text-sm text-slate-400">Score final</p>
+            <p className="mt-1 text-sm text-slate-400">
+              Score final (après pénalités)
+            </p>
 
             <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-lg bg-green-500/10 p-3">
