@@ -317,8 +317,8 @@ export default function QuizPage() {
     }
 
     const total = questions.length;
-    const bonnes = result.score;
-    const mauvaises = total - bonnes;
+    const bonnes = result.bonnes;
+    const mauvaises = result.mauvaises;
 
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-3 bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 px-4 text-white">
@@ -404,6 +404,9 @@ export default function QuizPage() {
           </div>
         </div>
 
+        <p className="mb-2 text-center text-xs text-red-300">
+          ⚠️ Mauvaise réponse = -0,25 point. Ne réponds que si tu es sûr !
+        </p>
         <h1 className="mb-8 text-2xl font-bold">{current.question}</h1>
 
         <div className="grid gap-3">
