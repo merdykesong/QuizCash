@@ -26,6 +26,21 @@ function timeAgo(dateString) {
   return "à l'instant";
 }
 
+function filterByPeriode(list, periode) {
+  if (periode === "tout") return list;
+  const now = new Date();
+  const cutoff = new Date(now);
+  if (periode === "semaine") cutoff.setDate(now.getDate() - 7);
+  if (periode === "mois") cutoff.setDate(now.getDate() - 30);
+  return list.filter((p) => new Date(p.created_at) >= cutoff);
+}
+
+const PERIODE_LABELS = {
+  semaine: "Semaine",
+  mois: "Mois",
+  tout: "Tout",
+};
+
 export default function DashboardPage() {
   const router = useRouter();
   const [profile, setProfile] = useState(null);
@@ -36,6 +51,8 @@ export default function DashboardPage() {
   const [joursActifs, setJoursActifs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [periode, setPeriode] = useState("semaine");
+  const [periodeOpen, setPeriodeOpen] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -45,17 +62,21 @@ export default function DashboardPage() {
         return;
       }
 
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", userData.user.id)
         .maybeSingle();
 
+      if (profileError) {
+        console.error("Erreur chargement profil:", profileError);
+      }
+
       const { data: partiesData } = await supabase
         .from("parties")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(4);
+        .limit(100);
 
       const { data: classementData } = await supabase.rpc(
         "obtenir_classement"
@@ -105,6 +126,10 @@ export default function DashboardPage() {
     ? Math.round((profile.meilleur_score / 30) * 100)
     : 0;
 
+  const partiesFiltrees = filterByPeriode(parties, periode);
+  const nombrePartiesPeriode =
+    periode === "tout" ? profile?.parties_jouees ?? 0 : partiesFiltrees.length;
+
   const medals = ["🥇", "🥈", "🥉"];
 
   return (
@@ -122,8 +147,47 @@ export default function DashboardPage() {
               </h1>
               <p className="text-slate-500">Prêt à tester vos connaissances ?</p>
             </div>
-            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">
-              📅 Semaine <span className="text-slate-400">▾</span>
+
+            <div className="relative">
+              <button
+                onClick={() => setPeriodeOpen((o) => !o)}
+                className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:bg-slate-50"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                >
+                  <rect x="3.5" y="5" width="17" height="16" rx="2" />
+                  <path d="M8 3v4M16 3v4M3.5 10h17" />
+                </svg>
+                {PERIODE_LABELS[periode]}{" "}
+                <span className="text-slate-400">▾</span>
+              </button>
+              {periodeOpen && (
+                <div className="absolute right-0 z-20 mt-2 w-32 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+                  {Object.entries(PERIODE_LABELS).map(([key, label]) => (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        setPeriode(key);
+                        setPeriodeOpen(false);
+                      }}
+                      className={`block w-full px-4 py-2 text-left text-sm hover:bg-slate-50 ${
+                        periode === key
+                          ? "font-semibold text-violet-600"
+                          : "text-slate-600"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -140,8 +204,8 @@ export default function DashboardPage() {
               icon="📊"
               iconBg="bg-cyan-100"
               label="Parties jouées"
-              value={profile?.parties_jouees ?? 0}
-              sub="au total"
+              value={nombrePartiesPeriode}
+              sub={PERIODE_LABELS[periode].toLowerCase()}
             />
             <StatCard
               icon="🏅"
@@ -208,13 +272,13 @@ export default function DashboardPage() {
                   Voir tout
                 </Link>
               </div>
-              {parties.length === 0 ? (
+              {partiesFiltrees.length === 0 ? (
                 <p className="text-sm text-slate-400">
-                  Aucune activité récente. Joue ta première partie !
+                  Aucune activité sur cette période.
                 </p>
               ) : (
                 <div className="flex flex-col gap-4">
-                  {parties.map((p) => (
+                  {partiesFiltrees.slice(0, 4).map((p) => (
                     <div key={p.id} className="flex items-center gap-3">
                       <span
                         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm ${
